@@ -30,13 +30,20 @@ if (-not (Test-Path $InstallDir)) {
 Write-Host "Copying files to $InstallDir..."
 Copy-Item -Path $SourcePath -Destination $DestPath -Force
 
-Write-Host "Creating Desktop Shortcut..."
+Write-Host "Creating Desktop and Start Menu shortcuts..."
 $WshShell = New-Object -comObject WScript.Shell
+
 $DesktopPath = [Environment]::GetFolderPath("Desktop")
 $Shortcut = $WshShell.CreateShortcut("$DesktopPath\$AppName.lnk")
 $Shortcut.TargetPath = $DestPath
 $Shortcut.WorkingDirectory = $InstallDir
 $Shortcut.Save()
+
+$StartMenuPath = [Environment]::GetFolderPath("Programs")
+$StartShortcut = $WshShell.CreateShortcut("$StartMenuPath\$AppName.lnk")
+$StartShortcut.TargetPath = $DestPath
+$StartShortcut.WorkingDirectory = $InstallDir
+$StartShortcut.Save()
 
 Write-Host "Installation completed successfully!" -ForegroundColor Green
 Write-Host "You can now launch JustSay from your Desktop."
