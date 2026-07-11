@@ -45,6 +45,17 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN onboarded INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+
+    # Insert default local user if not present
+    c.execute("SELECT COUNT(*) FROM users WHERE email='localuser@localhost'")
+    if c.fetchone()[0] == 0:
+        c.execute("INSERT INTO users (email, name, speaking_style, theme, hotkey_ptt, hotkey_toggle, onboarded) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                  ("localuser@localhost", "Guest User", "Casual", "Dark", "ctrl+windows", "ctrl+windows+space", 0))
+
     # Create Dictionary table (for Auto-dictionary)
     c.execute('''
         CREATE TABLE IF NOT EXISTS dictionary (
@@ -57,7 +68,7 @@ def init_db():
     c.execute("SELECT COUNT(*) FROM prompts")
     if c.fetchone()[0] == 0:
         c.execute("INSERT INTO prompts (prompt_text, is_active) VALUES (?, ?)", 
-                  ("Transcribe accurately, maintaining punctuation and capitalization.", 1))
+                  ("Transcribe accurately, maintaining proper capitalization, natural punctuation, and smart formatting (e.g. capitalize names, add commas, format acronyms properly).", 1))
     conn.commit()
     conn.close()
 
@@ -145,7 +156,7 @@ def save_user(email, name):
 def get_user_settings(email):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT speaking_style, theme, hotkey_ptt, hotkey_toggle FROM users WHERE email=?", (email,))
+    c.execute("SELECT speaking_style, theme, hotkey_ptt, hotkey_toggle, onboarded FROM users WHERE email=?", (email,))
     row = c.fetchone()
     conn.close()
     if row:
@@ -153,15 +164,16 @@ def get_user_settings(email):
             "speaking_style": row[0],
             "theme": row[1],
             "hotkey_ptt": row[2] or "ctrl+windows",
-            "hotkey_toggle": row[3] or "ctrl+windows+space"
+            "hotkey_toggle": row[3] or "ctrl+windows+space",
+            "onboarded": bool(row[4])
         }
     return None
 
-def update_user_settings(email, speaking_style, theme, hotkey_ptt="ctrl+windows", hotkey_toggle="ctrl+windows+space"):
+def update_user_settings(email, speaking_style, theme, hotkey_ptt="ctrl+windows", hotkey_toggle="ctrl+windows+space", onboarded=1):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("UPDATE users SET speaking_style=?, theme=?, hotkey_ptt=?, hotkey_toggle=? WHERE email=?", 
-              (speaking_style, theme, hotkey_ptt, hotkey_toggle, email))
+    c.execute("UPDATE users SET speaking_style=?, theme=?, hotkey_ptt=?, hotkey_toggle=?, onboarded=? WHERE email=?", 
+              (speaking_style, theme, hotkey_ptt, hotkey_toggle, int(onboarded), email))
     conn.commit()
     conn.close()
 

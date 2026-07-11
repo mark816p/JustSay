@@ -1,24 +1,10 @@
-from flask import Flask, render_template_string, request, redirect, url_for, send_file, session, jsonify
-from authlib.integrations.flask_client import OAuth
+from flask import Flask, render_template_string, request, redirect, url_for, send_file, jsonify
 import database
 import os
 import sqlite3
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "js-local-secret-2024")
-
-oauth = OAuth(app)
-google = oauth.register(
-    name='google',
-    client_id=os.environ.get("GOOGLE_CLIENT_ID", "mock-client-id"),
-    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET", "mock-client-secret"),
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    access_token_params=None,
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params=None,
-    api_base_url='https://www.googleapis.com/oauth2/v1/',
-    client_kwargs={'scope': 'openid email profile'},
-)
 
 def get_audio_filename(path):
     if not path:
@@ -77,7 +63,6 @@ HTML = r"""<!DOCTYPE html>
   --text: #f3f4f6;
   --text-muted: #9ca3af;
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  --glow: rgba(255,255,255,0.02);
 }
 
 [data-theme=light]{
@@ -90,7 +75,6 @@ HTML = r"""<!DOCTYPE html>
   --text: #1f2937;
   --text-muted: #6b7280;
   --shadow: 0 4px 12px rgba(0,0,0,0.05);
-  --glow: rgba(0,0,0,0.01);
 }
 
 body {
@@ -102,12 +86,60 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ONBOARDING LAYOUT */
+.onboard-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: var(--bg);
+}
+
+.onboard-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.onboard-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  border: 1.5px solid var(--border);
+  margin-bottom: 24px;
+  color: var(--text);
+}
+
+.onboard-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.onboard-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+/* SIDEBAR LAYOUT */
 .layout {
   display: flex;
   min-height: 100vh;
 }
 
-/* SIDEBAR */
 .sidebar {
   width: 250px;
   min-width: 250px;
@@ -123,13 +155,28 @@ body {
 }
 
 .sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 0 24px 20px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 20px;
 }
 
+.sidebar-logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
 .logo-text {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--text);
@@ -139,7 +186,7 @@ body {
   font-size: 0.65rem;
   font-weight: 600;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 1px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
@@ -300,6 +347,7 @@ body {
 /* INPUTS */
 .form-group {
   margin-bottom: 16px;
+  text-align: left;
 }
 
 .form-label {
@@ -553,44 +601,6 @@ audio {
   background: var(--accent-light);
 }
 
-/* USER PROFILE */
-.user-chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 24px 18px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 10px;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: #fff;
-}
-
-.user-details {
-  overflow: hidden;
-}
-
-.user-name {
-  font-size: 0.8rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.user-email {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
 /* TABS */
 .section {
   display: none;
@@ -602,23 +612,55 @@ audio {
 </head>
 <body>
 
+{% if not settings.onboarded %}
+<!-- ONBOARDING FLOW -->
+<div class="onboard-container">
+  <div class="onboard-card">
+    <div class="onboard-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:28px;height:28px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/></svg>
+    </div>
+    <div class="onboard-title">Welcome to JustSay</div>
+    <div class="onboard-desc">Set up your local speech dictation preferences to get started. All voice recognition processes run 100% offline.</div>
+    
+    <form action="/complete_onboarding" method="POST">
+      <div class="form-group">
+        <label class="form-label">Formatting Style & Tone</label>
+        <select name="speaking_style">
+          <option value="Casual">Casual (conversational and natural)</option>
+          <option value="Formal">Formal (strictly formatted, professional)</option>
+          <option value="Serious">Serious (concise and direct)</option>
+          <option value="Code">Code (inserts syntax characters)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Push-to-Talk Shortcut</label>
+        <input type="text" name="hotkey_ptt" value="ctrl+windows" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Toggle Recording Shortcut</label>
+        <input type="text" name="hotkey_toggle" value="ctrl+windows+space" required>
+      </div>
+
+      <button type="submit" class="btn" style="width:100%;margin-top:10px;">Get Started</button>
+    </form>
+  </div>
+</div>
+{% else %}
+
+<!-- SIDEBAR LAYOUT -->
 <div class="layout">
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-text">JustSay</div>
-      <div class="logo-sub">Offline Dictation OS</div>
-    </div>
-
-    {% if user %}
-    <div class="user-chip">
-      <div class="user-avatar">{{ user.name[0].upper() }}</div>
-      <div class="user-details">
-        <div class="user-name">{{ user.name }}</div>
-        <div class="user-email">{{ user.email }}</div>
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">JustSay</div>
+        <div class="logo-sub">Local Voice OS</div>
       </div>
     </div>
-    {% endif %}
 
     <span class="nav-section-title">Telemetry</span>
     <a class="nav-item active" onclick="showSection('overview',this)">
@@ -649,11 +691,6 @@ audio {
     </a>
 
     <div class="sidebar-bottom">
-      {% if user %}
-        <a href="/logout" class="btn btn-ghost" style="width:100%;margin-bottom:10px">Sign Out</a>
-      {% else %}
-        <a href="/login" class="btn" style="width:100%;margin-bottom:10px">Google Login</a>
-      {% endif %}
       <button class="theme-btn" onclick="toggleTheme()">
         <span id="theme-icon">{{ "🌙" if theme == "dark" else "☀️" }}</span>
         <span id="theme-label">{{ "Dark UI" if theme == "dark" else "Light UI" }}</span>
@@ -887,7 +924,7 @@ audio {
           </div>
 
           <div class="form-group">
-            <label class="form-label">Toggle Record Hotkey</label>
+            <label class="form-label">Toggle Recording Hotkey</label>
             <input type="text" name="hotkey_toggle" value="{{ settings.hotkey_toggle }}" placeholder="e.g. ctrl+windows+space" required>
             <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Combine keys using "+" (e.g. ctrl+windows+space, alt+space).</p>
           </div>
@@ -908,6 +945,7 @@ audio {
 
   </main>
 </div>
+{% endif %}
 
 <script>
 function showSection(name, el) {
@@ -938,11 +976,9 @@ function toggleTheme() {
 
 @app.route("/")
 def index():
-    user = session.get('user')
-    email = user['email'] if user else "localuser@localhost"
-    settings = database.get_user_settings(email)
+    settings = database.get_user_settings("localuser@localhost")
     if not settings:
-        settings = {'speaking_style': 'Casual', 'theme': 'dark', 'hotkey_ptt': 'ctrl+windows', 'hotkey_toggle': 'ctrl+windows+space'}
+        settings = {'speaking_style': 'Casual', 'theme': 'dark', 'hotkey_ptt': 'ctrl+windows', 'hotkey_toggle': 'ctrl+windows+space', 'onboarded': False}
     
     theme = (settings.get('theme') or 'dark').lower()
 
@@ -958,52 +994,33 @@ def index():
     insight_label, insight_score = generate_insights(history_raw)
 
     return render_template_string(HTML,
-        user=user, settings=settings, theme=theme,
+        settings=settings, theme=theme,
         history=history, prompts=prompts, stats=stats,
         dictionary=dictionary, insight_label=insight_label, insight_score=insight_score)
 
-@app.route('/login')
-def login():
-    if os.environ.get("GOOGLE_CLIENT_ID", "mock-client-id") == "mock-client-id":
-        session['user'] = {"email": "localuser@localhost", "name": "Local User"}
-        database.save_user("localuser@localhost", "Local User")
-        return redirect('/')
-    return google.authorize_redirect(url_for('authorize', _external=True))
-
-@app.route('/authorize')
-def authorize():
-    token = google.authorize_access_token()
-    user_info = google.get('userinfo').json()
-    session['user'] = user_info
-    database.save_user(user_info['email'], user_info['name'])
-    return redirect('/')
-
-@app.route('/logout')
-def logout():
-    session.pop('user', None)
-    return redirect('/')
+@app.route("/complete_onboarding", methods=["POST"])
+def complete_onboarding():
+    style = request.form.get("speaking_style", "Casual")
+    ptt = request.form.get("hotkey_ptt", "ctrl+windows")
+    toggle = request.form.get("hotkey_toggle", "ctrl+windows+space")
+    database.update_user_settings("localuser@localhost", style, "dark", ptt, toggle, onboarded=1)
+    return redirect(url_for("index"))
 
 @app.route("/update_settings", methods=["POST"])
 def update_settings():
-    user = session.get('user')
-    email = user['email'] if user else "localuser@localhost"
-    
     style = request.form.get("speaking_style", "Casual")
     theme = request.form.get("theme", "dark")
     ptt = request.form.get("hotkey_ptt", "ctrl+windows")
     toggle = request.form.get("hotkey_toggle", "ctrl+windows+space")
-    
-    database.update_user_settings(email, style, theme, ptt, toggle)
+    database.update_user_settings("localuser@localhost", style, theme, ptt, toggle, onboarded=1)
     return redirect(url_for("index"))
 
 @app.route("/api/set_theme", methods=["POST"])
 def set_theme_api():
-    user = session.get('user')
-    email = user['email'] if user else "localuser@localhost"
     data = request.get_json() or {}
-    s = database.get_user_settings(email)
+    s = database.get_user_settings("localuser@localhost")
     if s:
-        database.update_user_settings(email, s['speaking_style'], data.get('theme', 'dark'), s['hotkey_ptt'], s['hotkey_toggle'])
+        database.update_user_settings("localuser@localhost", s['speaking_style'], data.get('theme', 'dark'), s['hotkey_ptt'], s['hotkey_toggle'], s['onboarded'])
     return jsonify({"ok": True})
 
 @app.route("/add_to_dictionary", methods=["POST"])
