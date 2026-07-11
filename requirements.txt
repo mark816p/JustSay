@@ -1,4 +1,3 @@
-customtkinter
 faster-whisper
 keyboard
 pyautogui
@@ -9,3 +8,5 @@ pyperclip
 pystray
 Pillow
 pyinstaller
+Flask
+PyQt6
