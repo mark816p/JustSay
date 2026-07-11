@@ -6,15 +6,14 @@ class Transcriber:
         self.model_size = model_size
         self.compute_type = compute_type
         print(f"Loading Whisper model '{model_size}'...")
-        # device="auto" automatically selects GPU if available, else CPU
         self.model = WhisperModel(self.model_size, device="auto", compute_type=self.compute_type)
         print("Model loaded.")
 
-    def transcribe(self, audio_path):
+    def transcribe(self, audio_path, initial_prompt=""):
         if not os.path.exists(audio_path):
             return ""
         
-        # Transcribe audio
-        segments, info = self.model.transcribe(audio_path, beam_size=5)
+        # Transcribe audio using initial_prompt for context
+        segments, info = self.model.transcribe(audio_path, beam_size=5, initial_prompt=initial_prompt if initial_prompt else None)
         text = "".join([segment.text for segment in segments])
         return text.strip()
