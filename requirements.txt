@@ -6,3 +6,6 @@ pyaudio
 soundfile
 numpy
 pyperclip
+pystray
+Pillow
+pyinstaller
