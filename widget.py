@@ -7,7 +7,7 @@ import keyboard
 import threading
 import database
 
-class WisprWidget(QWidget):
+class JustSayWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowFlags(
@@ -102,7 +102,7 @@ class WisprWidget(QWidget):
 
 def run_widget_app(command_queue):
     app = QApplication(sys.argv)
-    widget = WisprWidget()
+    widget = JustSayWidget()
     
     def check_queue():
         while not command_queue.empty():
