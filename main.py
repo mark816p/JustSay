@@ -1,7 +1,8 @@
 import os
 import threading
 import time
-import customtkinter as ctk
+import multiprocessing
+import webbrowser
 import keyboard
 import pyperclip
 from PIL import Image
@@ -10,72 +11,52 @@ from pystray import MenuItem as item
 
 from audio_recorder import AudioRecorder
 from transcriber import Transcriber
+import database
 
-class JustSayApp(ctk.CTk):
+# For multiprocessing, we might use a Queue to send commands to the widget
+from widget import run_widget_app
+
+def run_server_process():
+    import server
+    server.run_server()
+
+class JustSayApp:
     def __init__(self):
-        super().__init__()
-
-        self.title("JustSay Dictation")
-        self.geometry("400x300")
-        
-        # Withdraw window initially if we want to start in tray, or show it. Let's show it first.
-        self.protocol('WM_DELETE_WINDOW', self.hide_window)
-
-        # Configure grid
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
-
-        # Main frame
-        self.main_frame = ctk.CTkFrame(self, corner_radius=15)
-        self.main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
-
-        self.title_label = ctk.CTkLabel(self.main_frame, text="JustSay", font=ctk.CTkFont(size=28, weight="bold"))
-        self.title_label.pack(pady=(20, 10))
-
-        self.status_label = ctk.CTkLabel(self.main_frame, text="Status: Loading Model...", font=ctk.CTkFont(size=14))
-        self.status_label.pack(pady=10)
-
-        self.info_label = ctk.CTkLabel(self.main_frame, text="Hold [Ctrl+Shift+Space] to dictate.\nRelease to auto-type.", font=ctk.CTkFont(size=13))
-        self.info_label.pack(pady=10)
-
-        self.settings_btn = ctk.CTkButton(self.main_frame, text="Hide to Tray", command=self.hide_window)
-        self.settings_btn.pack(pady=20)
-
-        # Initialize components
+        database.init_db()
         self.recorder = AudioRecorder()
-        self.transcriber = None
+        self.transcriber = Transcriber(model_size="tiny")
         self.is_recording = False
         
-        threading.Thread(target=self.load_model, daemon=True).start()
+        # Multiprocessing for the PyQt widget to avoid thread issues with pystray or hotkeys
+        self.cmd_queue = multiprocessing.Queue()
+        
+        self.widget_process = multiprocessing.Process(target=run_widget_app, args=(self.cmd_queue,), daemon=True)
+        self.server_process = multiprocessing.Process(target=run_server_process, daemon=True)
 
-        # Setup Hotkey
+    def start(self):
+        self.server_process.start()
+        self.widget_process.start()
+
         self.hotkey_thread = threading.Thread(target=self.hotkey_listener, daemon=True)
         self.hotkey_thread.start()
 
-    def load_model(self):
-        self.transcriber = Transcriber(model_size="tiny")
-        self.update_status("Idle. Ready to dictate.")
+        self.create_tray()
 
-    def update_status(self, text):
-        try:
-            self.after(0, lambda: self.status_label.configure(text=f"Status: {text}"))
-        except:
-            pass
+    def create_tray(self):
+        image = Image.new('RGB', (64, 64), color=(187, 134, 252))
+        menu = (
+            item('Dashboard (localhost:2000)', self.open_dashboard),
+            item('Quit', self.quit_app)
+        )
+        self.icon = pystray.Icon("JustSay", image, "JustSay", menu)
+        self.icon.run()
 
-    def hide_window(self):
-        self.withdraw()
-        image = Image.new('RGB', (64, 64), color = (73, 109, 137))
-        menu = (item('Show', self.show_window), item('Quit', self.quit_window))
-        self.icon = pystray.Icon("name", image, "JustSay", menu)
-        threading.Thread(target=self.icon.run, daemon=True).start()
+    def open_dashboard(self, icon, item):
+        webbrowser.open("http://localhost:2000")
 
-    def show_window(self, icon, item):
+    def quit_app(self, icon, item):
+        self.cmd_queue.put("QUIT")
         self.icon.stop()
-        self.after(0, self.deiconify)
-
-    def quit_window(self, icon, item):
-        self.icon.stop()
-        self.after(0, self.destroy)
         os._exit(0)
 
     def hotkey_listener(self):
@@ -92,36 +73,36 @@ class JustSayApp(ctk.CTk):
             time.sleep(0.05)
 
     def start_dictation(self):
-        if not self.transcriber:
-            return
         self.is_recording = True
-        self.update_status("Recording...")
+        self.cmd_queue.put("START")
         self.recorder.start_recording()
 
     def stop_dictation(self):
         if not self.is_recording:
             return
         self.is_recording = False
-        self.update_status("Processing...")
+        self.cmd_queue.put("STOP")
+        
         threading.Thread(target=self.process_audio, daemon=True).start()
 
     def process_audio(self):
-        audio_file = self.recorder.stop_recording("temp_dictation.wav")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        audio_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "history_audio"))
+        os.makedirs(audio_dir, exist_ok=True)
+        audio_file_path = os.path.join(audio_dir, f"dictation_{timestamp}.wav")
+        
+        audio_file = self.recorder.stop_recording(audio_file_path)
         if audio_file:
-            self.update_status("Transcribing...")
-            text = self.transcriber.transcribe(audio_file)
+            prompt = database.get_active_prompt()
+            text = self.transcriber.transcribe(audio_file, initial_prompt=prompt)
             if text:
+                database.save_history(audio_file, text)
                 pyperclip.copy(text + " ")
                 time.sleep(0.1)
                 keyboard.send("ctrl+v")
-                self.update_status("Pasted!")
-            else:
-                self.update_status("No speech detected.")
-            time.sleep(2)
-            self.update_status("Idle. Ready to dictate.")
 
 if __name__ == "__main__":
-    ctk.set_appearance_mode("Dark")
-    ctk.set_default_color_theme("blue")
+    import datetime # Need it here since it's used in process_audio
+    multiprocessing.freeze_support()
     app = JustSayApp()
-    app.mainloop()
+    app.start()
