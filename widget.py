@@ -29,20 +29,22 @@ class JustSayWidget(QWidget):
         
         self.is_recording = False
         
-        self.undo_btn = QPushButton("Undo & Correct", self)
+        self.undo_btn = QPushButton("Add Custom Word?", self)
         self.undo_btn.setGeometry(50, 15, 200, 30)
         self.undo_btn.setStyleSheet("""
             QPushButton {
-                background-color: #cf6679;
+                background-color: #4b5563;
                 color: white;
                 border-radius: 10px;
                 font-weight: bold;
+                font-family: Arial, sans-serif;
+                font-size: 11px;
             }
             QPushButton:hover {
-                background-color: #ff8a9f;
+                background-color: #6b7280;
             }
         """)
-        self.undo_btn.clicked.connect(self.undo_action)
+        self.undo_btn.clicked.connect(self.add_word_action)
         self.undo_btn.hide()
         
         self.timer = QTimer()
@@ -54,14 +56,14 @@ class JustSayWidget(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
         # Draw pill background
-        painter.setBrush(QColor(30, 30, 30, 220))
+        painter.setBrush(QColor(30, 30, 30, 225))
         painter.setPen(Qt.PenStyle.NoPen)
         rect = QRectF(0, 0, self.width_val, self.height_val)
         painter.drawRoundedRect(rect, self.height_val/2, self.height_val/2)
         
         if self.is_recording:
-            # Draw waveform
-            painter.setPen(QPen(QColor(187, 134, 252), 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+            # Draw waveform (monochromatic grey)
+            painter.setPen(QPen(QColor(150, 150, 150), 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
             
             center_y = self.height_val / 2
             num_bars = 10
@@ -77,27 +79,25 @@ class JustSayWidget(QWidget):
             painter.setBrush(QColor(100, 100, 100))
             painter.drawEllipse(int(self.width_val/2 - 6), int(self.height_val/2 - 6), 12, 12)
 
-    def undo_action(self):
-        # 1. Send Ctrl+Z to undo the paste
-        keyboard.send("ctrl+z")
+    def add_word_action(self):
         self.undo_btn.hide()
         
-        # 2. Ask user for correct spelling
-        text, ok = QInputDialog.getText(self, 'Dictionary', 'Enter correct word/phrase to learn:')
-        if ok and text:
-            database.add_to_dictionary(text)
+        # Prompt user to input the correct word to teach the transcriber
+        text, ok = QInputDialog.getText(self, 'Vocabulary', 'Add word/phrase to local dictionary:')
+        if ok and text.strip():
+            database.add_to_dictionary(text.strip())
             # Show a brief notification
             msg = QMessageBox(self)
-            msg.setWindowTitle("Learned")
-            msg.setText(f"Added '{text}' to dictionary!")
-            msg.setStyleSheet("background-color: #333; color: white;")
-            QTimer.singleShot(2000, msg.close)
+            msg.setWindowTitle("Dictionary")
+            msg.setText(f"Added '{text.strip()}' to dictionary!")
+            msg.setStyleSheet("background-color: #222; color: white;")
+            QTimer.singleShot(1500, msg.close)
             msg.show()
 
     def show_undo_btn(self):
         self.undo_btn.show()
-        # Hide it after 4 seconds
-        QTimer.singleShot(4000, self.undo_btn.hide)
+        # Hide it after exactly 2 seconds
+        QTimer.singleShot(2000, self.undo_btn.hide)
 
 
 def run_widget_app(command_queue):

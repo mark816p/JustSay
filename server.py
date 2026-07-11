@@ -2,6 +2,7 @@ from flask import Flask, render_template_string, request, redirect, url_for, sen
 from authlib.integrations.flask_client import OAuth
 import database
 import os
+import sqlite3
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "js-local-secret-2024")
@@ -36,67 +37,60 @@ def generate_insights(history):
     avg_len = len(words) / len(history)
     score = int(min(100, max(0, 100 - (filler_count / max(len(words), 1)) * 400)))
     if filler_count > len(words) * 0.05:
-        return "Conversational (Filler-Heavy)", score
+        return "Conversational", score
     elif avg_len > 25:
-        return "Expressive & Detailed", score
+        return "Expressive", score
     elif avg_len < 6:
-        return "Concise & Direct", score
+        return "Concise", score
     else:
-        return "Fluent & Professional", score
+        return "Fluent", score
 
 HTML = r"""<!DOCTYPE html>
 <html lang="en" data-theme="{{ theme }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>JustSay — Local Voice Dictation Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<title>JustSay — Local Voice Dictation</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root {
-  --r-lg: 20px;
-  --r-md: 14px;
-  --r-sm: 8px;
-  --accent: #6366f1;
-  --accent-light: #818cf8;
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  --danger: #f43f5e;
-  --danger-light: #fda4af;
+  --r-lg: 12px;
+  --r-md: 8px;
+  --r-sm: 4px;
+  --accent: #4b5563;
+  --accent-light: #9ca3af;
+  --danger: #ef4444;
   --success: #10b981;
-  --trans: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --trans: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 [data-theme=dark]{
-  --bg: #09090b;
-  --bg-sidebar: #0f0f13;
-  --bg-card: rgba(20, 20, 27, 0.7);
-  --bg-hover: rgba(30, 30, 42, 0.8);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(99, 102, 241, 0.4);
-  --text: #fafafa;
-  --text-muted: #8b8e9f;
-  --shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.6);
-  --glow: rgba(99, 102, 241, 0.12);
-  --glass-bg: rgba(9, 9, 11, 0.75);
+  --bg: #121214;
+  --bg-sidebar: #18181c;
+  --bg-card: #1c1c22;
+  --bg-hover: #26262f;
+  --border: #2d2d37;
+  --border-focus: #4b5563;
+  --text: #f3f4f6;
+  --text-muted: #9ca3af;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --glow: rgba(255,255,255,0.02);
 }
 
 [data-theme=light]{
-  --bg: #f8fafc;
+  --bg: #f3f4f6;
   --bg-sidebar: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --bg-hover: rgba(241, 245, 249, 0.9);
-  --border: rgba(0, 0, 0, 0.06);
-  --border-focus: rgba(99, 102, 241, 0.3);
-  --text: #0f172a;
-  --text-muted: #64748b;
-  --shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.05);
-  --glow: rgba(99, 102, 241, 0.04);
-  --glass-bg: rgba(255, 255, 255, 0.8);
+  --bg-card: #ffffff;
+  --bg-hover: #f9fafb;
+  --border: #e5e7eb;
+  --border-focus: #9ca3af;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --shadow: 0 4px 12px rgba(0,0,0,0.05);
+  --glow: rgba(0,0,0,0.01);
 }
 
 body {
@@ -104,11 +98,10 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  transition: background 0.3s, color 0.3s;
+  transition: background 0.2s, color 0.2s;
   -webkit-font-smoothing: antialiased;
 }
 
-/* APP LAYOUT */
 .layout {
   display: flex;
   min-height: 100vh;
@@ -116,13 +109,13 @@ body {
 
 /* SIDEBAR */
 .sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: 250px;
+  min-width: 250px;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  padding: 32px 0;
+  padding: 30px 0;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -130,49 +123,47 @@ body {
 }
 
 .sidebar-logo {
-  padding: 0 28px 24px;
+  padding: 0 24px 20px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .logo-text {
-  font-size: 1.6rem;
-  font-weight: 800;
+  font-size: 1.3rem;
+  font-weight: 700;
   letter-spacing: -0.5px;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text);
 }
 
 .logo-sub {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.65rem;
+  font-weight: 600;
   color: var(--text-muted);
-  margin-top: 4px;
-  letter-spacing: 1px;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
 .nav-section-title {
   font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   color: var(--text-muted);
-  padding: 20px 28px 8px;
+  padding: 16px 24px 6px;
+  opacity: 0.8;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 28px;
-  font-size: 0.9rem;
+  gap: 12px;
+  padding: 10px 24px;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  border-left: 4px solid transparent;
+  border-left: 3px solid transparent;
   transition: var(--trans);
   text-decoration: none;
 }
@@ -180,25 +171,23 @@ body {
 .nav-item:hover, .nav-item.active {
   color: var(--text);
   background: var(--bg-hover);
-  border-left-color: var(--accent);
+  border-left-color: var(--text);
 }
 
 .nav-item svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   opacity: 0.7;
-  transition: var(--trans);
 }
 
 .nav-item:hover svg, .nav-item.active svg {
   opacity: 1;
-  color: var(--accent);
 }
 
 .sidebar-bottom {
   margin-top: auto;
-  padding: 24px 28px 0;
+  padding: 20px 24px 0;
   border-top: 1px solid var(--border);
 }
 
@@ -206,13 +195,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   background: var(--bg-hover);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 12px;
+  padding: 10px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text);
   width: 100%;
@@ -220,155 +209,124 @@ body {
 }
 
 .theme-btn:hover {
-  border-color: var(--accent);
+  border-color: var(--border-focus);
 }
 
-/* MAIN CONTENT */
+/* MAIN */
 .main {
   flex: 1;
-  padding: 48px 64px;
+  padding: 40px 50px;
   overflow-y: auto;
-  max-width: 1100px;
 }
 
 .page-header {
-  margin-bottom: 40px;
+  margin-bottom: 30px;
 }
 
 .page-header h1 {
-  font-size: 2.2rem;
-  font-weight: 800;
-  letter-spacing: -0.75px;
-  margin-bottom: 8px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
 }
 
 .page-header p {
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 500;
 }
 
-/* CARDS */
+/* GRID & CARDS */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
 }
 
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  padding: 28px;
-  position: relative;
-  overflow: hidden;
+  padding: 24px;
   transition: var(--trans);
 }
 
-.stat-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at top right, var(--glow), transparent 70%);
-  pointer-events: none;
-}
-
 .stat-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--accent);
+  border-color: var(--border-focus);
   box-shadow: var(--shadow);
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.75px;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .stat-value {
-  font-size: 2.8rem;
-  font-weight: 800;
+  font-size: 2.2rem;
+  font-weight: 700;
   line-height: 1.1;
-  margin-bottom: 6px;
-  letter-spacing: -1px;
-}
-
-.stat-value.accent {
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  margin-bottom: 4px;
 }
 
 .stat-sub {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  font-weight: 500;
 }
 
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  padding: 32px;
-  margin-bottom: 24px;
-  transition: var(--trans);
-}
-
-.card:hover {
-  border-color: var(--border-focus);
+  padding: 28px;
+  margin-bottom: 20px;
 }
 
 .card-title {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   margin-bottom: 6px;
-  letter-spacing: -0.25px;
 }
 
 .card-desc {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  margin-bottom: 24px;
-  font-weight: 500;
+  margin-bottom: 20px;
 }
 
-/* FORMS & INPUTS */
+/* INPUTS */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .form-label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-muted);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-input[type=text], select, textarea {
+input[type=text], select {
   background: var(--bg);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 12px 16px;
+  padding: 10px 14px;
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   width: 100%;
   transition: var(--trans);
   outline: none;
 }
 
-input[type=text]:focus, select:focus, textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+input[type=text]:focus, select:focus {
+  border-color: var(--border-focus);
 }
 
 /* BUTTONS */
@@ -381,9 +339,9 @@ input[type=text]:focus, select:focus, textarea:focus {
   color: #fff;
   border: none;
   border-radius: var(--r-md);
-  padding: 12px 24px;
-  font-size: 0.9rem;
-  font-weight: 700;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   font-family: var(--font-sans);
   transition: var(--trans);
@@ -393,17 +351,11 @@ input[type=text]:focus, select:focus, textarea:focus {
 
 .btn:hover {
   background: var(--accent-light);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-}
-
-.btn:active {
-  transform: translateY(0);
 }
 
 .btn-sm {
-  padding: 8px 16px;
-  font-size: 0.8rem;
+  padding: 6px 12px;
+  font-size: 0.75rem;
   border-radius: var(--r-sm);
 }
 
@@ -415,34 +367,28 @@ input[type=text]:focus, select:focus, textarea:focus {
 
 .btn-ghost:hover {
   background: var(--bg-hover);
-  border-color: var(--text);
-  color: var(--text);
-  transform: none;
-  box-shadow: none;
 }
 
 .btn-danger {
   background: var(--danger);
 }
 .btn-danger:hover {
-  background: #f43f5e;
-  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
+  background: #f87171;
 }
 
-.btn-outline-accent {
+.btn-outline {
   background: transparent;
-  border: 1.5px solid var(--accent);
-  color: var(--accent);
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
-.btn-outline-accent:hover {
-  background: var(--accent);
-  color: #fff;
+.btn-outline:hover {
+  background: var(--bg-hover);
 }
 
 .form-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 .form-row input {
   flex: 1;
@@ -460,19 +406,17 @@ table {
 
 th {
   text-align: left;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-muted);
-  padding: 16px 20px;
-  border-bottom: 1.5px solid var(--border);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
 }
 
 td {
-  padding: 16px 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  padding: 12px 16px;
+  font-size: 0.85rem;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
@@ -485,174 +429,151 @@ tr:hover td {
   background: var(--bg-hover);
 }
 
-/* BADGES & CHIPS */
+/* TAGS */
+.tag-container {
+  display: flex;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: var(--r-lg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  gap: 8px;
+}
+
+.tag-delete {
+  color: var(--danger);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.25px;
 }
 
 .badge-active {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.12);
   color: var(--success);
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.badge-accent {
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--accent);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tag {
+.badge-neutral {
   background: var(--bg);
-  color: var(--accent);
+  color: var(--text-muted);
   border: 1px solid var(--border);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: var(--trans);
 }
 
-.tag:hover {
-  border-color: var(--accent);
-  background: var(--bg-hover);
-}
-
-/* SHORTCUT CARDS */
+/* SHORTCUTS */
 .shortcut-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 16px;
 }
 
 .shortcut-card {
   background: var(--bg);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  padding: 18px;
 }
 
 .shortcut-keys {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
 kbd {
   background: var(--bg-sidebar);
   border: 1px solid var(--border);
-  border-bottom: 3.5px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 10px;
+  border-bottom: 2.5px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text);
-  box-shadow: 0 2px 0 rgba(0,0,0,0.05);
 }
 
 .shortcut-desc {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
-/* CUSTOM AUDIO CONTROLS WRAPPER */
+/* AUDIO */
 .audio-container {
   display: flex;
   align-items: center;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 6px 12px;
-  max-width: 320px;
+  padding: 4px;
+  max-width: 280px;
 }
 
 audio {
-  height: 36px;
+  height: 30px;
   width: 100%;
-  border-radius: var(--r-sm);
-  outline: none;
 }
 
-/* PRIVACY BANNER */
+/* BANNER */
 .privacy-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: rgba(16, 185, 129, 0.06);
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  background: rgba(75, 85, 99, 0.08);
+  border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  font-size: 0.88rem;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
-.privacy-banner strong {
-  color: var(--success);
-}
-
-/* PROGRESS BAR */
+/* PROGRESS */
 .progress-bar {
   background: var(--bg);
   border-radius: 99px;
-  height: 8px;
-  margin-top: 12px;
+  height: 6px;
+  margin-top: 10px;
   overflow: hidden;
   border: 1px solid var(--border);
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 99px;
-  background: var(--accent-gradient);
-  transition: width 0.5s ease;
+  background: var(--accent-light);
 }
 
-/* USER PROFILE INFO */
+/* USER PROFILE */
 .user-chip {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 28px 24px;
+  gap: 10px;
+  padding: 12px 24px 18px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .user-avatar {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: var(--accent-gradient);
+  background: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 0.85rem;
   color: #fff;
-  flex-shrink: 0;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
 }
 
 .user-details {
@@ -660,51 +581,22 @@ audio {
 }
 
 .user-name {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .user-email {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* SECTION TRANSITIONS */
+/* TABS */
 .section {
   display: none;
-  animation: fadeIn 0.3s ease;
 }
 .section.active {
   display: block;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* SCROLLBAR */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 99px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
 }
 </style>
 </head>
@@ -715,7 +607,7 @@ audio {
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-text">JustSay</div>
-      <div class="logo-sub">Private Audio OS</div>
+      <div class="logo-sub">Offline Dictation OS</div>
     </div>
 
     {% if user %}
@@ -728,41 +620,39 @@ audio {
     </div>
     {% endif %}
 
-    <span class="nav-section-title">Analysis & Logs</span>
+    <span class="nav-section-title">Telemetry</span>
     <a class="nav-item active" onclick="showSection('overview',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Overview
     </a>
     <a class="nav-item" onclick="showSection('history',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      History logs
+      History Logs
     </a>
     
-    <span class="nav-section-title">Customisation</span>
+    <span class="nav-section-title">Settings</span>
     <a class="nav-item" onclick="showSection('dictionary',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
       Vocabulary
     </a>
     <a class="nav-item" onclick="showSection('prompts',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      Instructions
+      AI Rules
     </a>
-
-    <span class="nav-section-title">Configuration</span>
     <a class="nav-item" onclick="showSection('shortcuts',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
       Shortcuts
     </a>
-    <a class="nav-item" onclick="showSection('settings',this)">
+    <a class="nav-item" onclick="showSection('preferences',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       Preferences
     </a>
 
     <div class="sidebar-bottom">
       {% if user %}
-        <a href="/logout" class="btn btn-ghost" style="width:100%;margin-bottom:12px">Sign Out</a>
+        <a href="/logout" class="btn btn-ghost" style="width:100%;margin-bottom:10px">Sign Out</a>
       {% else %}
-        <a href="/login" class="btn" style="width:100%;margin-bottom:12px">Sign In (Google)</a>
+        <a href="/login" class="btn" style="width:100%;margin-bottom:10px">Google Login</a>
       {% endif %}
       <button class="theme-btn" onclick="toggleTheme()">
         <span id="theme-icon">{{ "🌙" if theme == "dark" else "☀️" }}</span>
@@ -778,51 +668,55 @@ audio {
     <div id="sec-overview" class="section active">
       <div class="page-header">
         <h1>Overview</h1>
-        <p>Real-time analytics and telemetry of your local voice sessions.</p>
+        <p>Operational summary of local speech sessions.</p>
       </div>
       
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Total Dictations</div>
-          <div class="stat-value accent">{{ stats.total_dictations }}</div>
-          <div class="stat-sub">Completed sessions</div>
+          <div class="stat-value">{{ stats.total_dictations }}</div>
+          <div class="stat-sub">Recorded voice inputs</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Words Logged</div>
-          <div class="stat-value accent">{{ stats.total_words }}</div>
-          <div class="stat-sub">Words typed via audio</div>
+          <div class="stat-value">{{ stats.total_words }}</div>
+          <div class="stat-sub">Words typed via microphone</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Speaking Rhythm</div>
-          <div class="stat-value" style="font-size:1.3rem;padding-top:10px;font-weight:700">{{ insight_label }}</div>
-          <div class="stat-sub">Vocabulary flow index</div>
+          <div class="stat-label">Speech Flow</div>
+          <div class="stat-value" style="font-size:1.2rem;padding-top:8px;font-weight:700">{{ insight_label }}</div>
+          <div class="stat-sub">Pacing score</div>
           <div class="progress-bar"><div class="progress-fill" style="width:{{ insight_score }}%"></div></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">Direct Shortcuts</div>
-        <div class="card-desc">JustSay runs transparently in the background. Use these keys in any app.</div>
+        <div class="card-title">Shortcuts Configured</div>
+        <div class="card-desc">Active system hotkeys. Customize these in the Preferences menu.</div>
         <div class="shortcut-grid">
           <div class="shortcut-card">
-            <div>
-              <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Win</kbd></div>
-              <div class="card-title" style="font-size:0.95rem;margin-bottom:4px">Push-to-Talk</div>
-              <div class="shortcut-desc">Hold keys to record audio. Release them to transcribe and paste instantly.</div>
+            <div class="shortcut-keys">
+              {% for k in settings.hotkey_ptt.split('+') %}
+                <kbd>{{ k.upper() }}</kbd>
+              {% endfor %}
             </div>
+            <div class="card-title" style="font-size:0.9rem;margin-bottom:4px">Push-to-Talk</div>
+            <div class="shortcut-desc">Hold to record audio, release to transcribe.</div>
           </div>
           <div class="shortcut-card">
-            <div>
-              <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Win</kbd><span>+</span><kbd>Space</kbd></div>
-              <div class="card-title" style="font-size:0.95rem;margin-bottom:4px">Toggle Recording</div>
-              <div class="shortcut-desc">Press once to start recording. Press again to finish. Useful for long speech.</div>
+            <div class="shortcut-keys">
+              {% for k in settings.hotkey_toggle.split('+') %}
+                <kbd>{{ k.upper() }}</kbd>
+              {% endfor %}
             </div>
+            <div class="card-title" style="font-size:0.9rem;margin-bottom:4px">Toggle Recording</div>
+            <div class="shortcut-desc">Press to start, press again to stop recording.</div>
           </div>
         </div>
       </div>
 
       <div class="privacy-banner">
-        🔒 <strong>Local Isolation:</strong> &nbsp;This system does not dispatch data to cloud servers. All neural model evaluation is conducted locally on your computer.
+        🔒 <strong>Local Sovereignty:</strong> &nbsp;This system runs offline. Transcription, audio archiving, settings, and custom dictionaries are saved strictly on this PC.
       </div>
     </div>
 
@@ -832,10 +726,10 @@ audio {
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <h1>History Logs</h1>
-            <p>Your previous transcriptions and audio captures.</p>
+            <p>On-device transcripts and audio logs.</p>
           </div>
-          <form action="/clear_history" method="POST" onsubmit="return confirm('Wipe all local recordings and logs permanently?')">
-            <button type="submit" class="btn btn-danger btn-sm">Clear Log History</button>
+          <form action="/clear_history" method="POST" onsubmit="return confirm('Wipe all local recordings permanently?')">
+            <button type="submit" class="btn btn-danger btn-sm">Clear Logs</button>
           </form>
         </div>
       </div>
@@ -843,13 +737,13 @@ audio {
       <div class="card" style="padding:0;overflow:hidden">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Timestamp</th><th>Transcribed Content</th><th>Length</th><th>Audio Wave</th></tr></thead>
+            <thead><tr><th>Timestamp</th><th>Transcript</th><th>Words</th><th>Audio Wave</th></tr></thead>
             <tbody>
             {% for h in history %}
             <tr>
               <td style="white-space:nowrap;color:var(--text-muted);font-size:0.8rem;font-family:var(--font-mono)">{{ h.timestamp }}</td>
-              <td style="line-height:1.5;max-width:380px;font-weight:500">{{ h.transcript }}</td>
-              <td><span class="badge badge-accent">{{ h.word_count }} words</span></td>
+              <td style="line-height:1.4;max-width:360px;font-weight:500">{{ h.transcript }}</td>
+              <td><span class="badge badge-neutral">{{ h.word_count }}</span></td>
               <td>
                 <div class="audio-container">
                   <audio controls><source src="/audio/{{ h.audio_filename }}" type="audio/wav"></audio>
@@ -857,7 +751,7 @@ audio {
               </td>
             </tr>
             {% else %}
-            <tr><td colspan="4" style="text-align:center;padding:48px;color:var(--text-muted);font-style:italic">No local voice sessions logged yet.</td></tr>
+            <tr><td colspan="4" style="text-align:center;padding:48px;color:var(--text-muted);font-style:italic">No local recordings found.</td></tr>
             {% endfor %}
             </tbody>
           </table>
@@ -869,32 +763,42 @@ audio {
     <div id="sec-dictionary" class="section">
       <div class="page-header">
         <h1>Local Vocabulary</h1>
-        <p>Custom dictionary names, jargon, and words the transcription engine will prioritize.</p>
+        <p>Define custom names, project terms, or jargon. The neural transcriber uses these to improve matching accuracy.</p>
       </div>
+
       <div class="card">
-        <div class="card-title">Known Vocabulary Terms</div>
-        <div class="card-desc">Clicking "Undo & Correct" on the visual waveform pill appends terms here.</div>
-        <div class="tags">
+        <div class="card-title">Add Custom Word</div>
+        <form action="/add_to_dictionary" method="POST" class="form-row" style="margin-bottom: 24px;">
+          <input type="text" name="word" placeholder="e.g. Kubernetes, Antigravity, Kinjal" required>
+          <button type="submit" class="btn">Add Word</button>
+        </form>
+
+        <div class="card-title" style="margin-top: 20px;">Active Custom Terms</div>
+        <div class="card-desc">Click the "x" next to a word to remove it from the database.</div>
+        <div class="tags" style="display:flex;flex-wrap:wrap;gap:8px;">
           {% for word in dictionary %}
-            <span class="tag">{{ word }}</span>
+            <div class="tag-container">
+              <span>{{ word }}</span>
+              <a href="/delete_from_dictionary/{{ word }}" class="tag-delete">&times;</a>
+            </div>
           {% else %}
-            <span style="color:var(--text-muted);font-size:0.9rem;font-style:italic">Your customized dictionary is currently empty. Use the quick Undo pill when dictating to add corrections.</span>
+            <span style="color:var(--text-muted);font-size:0.85rem;font-style:italic">No vocabulary terms added yet.</span>
           {% endfor %}
         </div>
       </div>
     </div>
 
-    <!-- INSTRUCTIONS -->
+    <!-- AI RULES / PROMPTS -->
     <div id="sec-prompts" class="section">
       <div class="page-header">
-        <h1>AI Formatting Instructions</h1>
-        <p>Specify prompts to guide structural formatting (e.g. casing, styling, code formatting).</p>
+        <h1>AI Instruction Rules</h1>
+        <p>Supply custom rules to format, capitalize, or structure the output text.</p>
       </div>
       
       <div class="card">
-        <div class="card-title" style="margin-bottom:12px">Create Formatting Rule</div>
+        <div class="card-title" style="margin-bottom:12px">Create Rule</div>
         <form action="/add_prompt" method="POST" class="form-row">
-          <input type="text" name="prompt_text" placeholder="e.g. Always write code blocks in markdown. Format dates as DD-MM-YYYY." required>
+          <input type="text" name="prompt_text" placeholder="e.g. Capitalize acronyms. Use bullet points for lists." required>
           <button type="submit" class="btn">Add Rule</button>
         </form>
       </div>
@@ -908,13 +812,13 @@ audio {
             <tr>
               <td style="width:140px">
                 {% if p.is_active %}<span class="badge badge-active">Active</span>
-                {% else %}<a href="/set_active/{{ p.id }}" class="btn btn-sm btn-outline-accent">Activate</a>{% endif %}
+                {% else %}<a href="/set_active/{{ p.id }}" class="btn btn-sm btn-outline">Activate</a>{% endif %}
               </td>
               <td style="font-weight:600">{{ p.prompt_text }}</td>
               <td style="text-align:right"><a href="/delete_prompt/{{ p.id }}" class="btn btn-sm btn-ghost" style="color:var(--danger);border-color:var(--danger)">Remove</a></td>
             </tr>
             {% else %}
-            <tr><td colspan="3" style="text-align:center;padding:48px;color:var(--text-muted);font-style:italic">No customized rules added yet.</td></tr>
+            <tr><td colspan="3" style="text-align:center;padding:48px;color:var(--text-muted);font-style:italic">No rules added.</td></tr>
             {% endfor %}
             </tbody>
           </table>
@@ -922,73 +826,81 @@ audio {
       </div>
     </div>
 
-    <!-- SHORTCUTS -->
+    <!-- SHORTCUTS VIEW -->
     <div id="sec-shortcuts" class="section">
       <div class="page-header">
-        <h1>Keyboard Shortcuts</h1>
-        <p>Global triggers active across the entire operating system environment.</p>
+        <h1>Keyboard Triggers</h1>
+        <p>Global OS triggers. Tap or hold keys to dictation-type instantly.</p>
       </div>
-      <div class="shortcut-grid" style="grid-template-columns:1fr;gap:20px">
-        <div class="shortcut-card" style="background:var(--bg-card)">
-          <div>
-            <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Win</kbd></div>
-            <div class="card-title" style="margin-bottom:8px">Push-to-Talk (Hold)</div>
-            <div class="shortcut-desc">Press and hold these keys down. Speak normally. The moment you release both keys, recording stops, Whisper processes it, and the text is pasted immediately into the active text focus.</div>
+      <div class="shortcut-grid" style="grid-template-columns:1fr;gap:16px">
+        <div class="shortcut-card">
+          <div class="shortcut-keys">
+            {% for k in settings.hotkey_ptt.split('+') %}
+              <kbd>{{ k.upper() }}</kbd>
+            {% endfor %}
           </div>
+          <div class="card-title" style="margin-bottom:8px">Push-to-Talk (Hold)</div>
+          <div class="shortcut-desc">Hold down keys to capture audio. Release to transcribe and paste.</div>
         </div>
-        <div class="shortcut-card" style="background:var(--bg-card)">
-          <div>
-            <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Win</kbd><span>+</span><kbd>Space</kbd></div>
-            <div class="card-title" style="margin-bottom:8px">Toggle Recording State (Tap)</div>
-            <div class="shortcut-desc">Tap once to begin recording. Tap again to terminate recording and perform automatic pasting. Ideal for hands-free speech.</div>
+        <div class="shortcut-card">
+          <div class="shortcut-keys">
+            {% for k in settings.hotkey_toggle.split('+') %}
+              <kbd>{{ k.upper() }}</kbd>
+            {% endfor %}
           </div>
+          <div class="card-title" style="margin-bottom:8px">Toggle Recording State (Tap)</div>
+          <div class="shortcut-desc">Tap once to begin recording. Tap again to terminate recording and paste.</div>
         </div>
-        <div class="shortcut-card" style="background:var(--bg-card)">
-          <div>
-            <div class="shortcut-keys"><kbd>Undo Pill</kbd></div>
-            <div class="card-title" style="margin-bottom:8px">Undo &amp; Learn Corrections</div>
-            <div class="shortcut-desc">When dictation completes, a small visual button saying "Undo &amp; Correct" appears for 4 seconds on top of all windows. Click it to undo typing and type the correct spelling so the AI learns the word.</div>
-          </div>
+        <div class="shortcut-card">
+          <div class="shortcut-keys"><kbd>Visual Overlay Pill</kbd></div>
+          <div class="card-title" style="margin-bottom:8px">Learn Dictionary Terms</div>
+          <div class="shortcut-desc">When dictation completes, a small button appears for 2 seconds on your taskbar pill. Tap it to quickly teach the system spelling corrections.</div>
         </div>
       </div>
     </div>
 
     <!-- PREFERENCES -->
-    <div id="sec-settings" class="section">
+    <div id="sec-preferences" class="section">
       <div class="page-header">
         <h1>Preferences</h1>
-        <p>Manage application preferences and user configurations.</p>
+        <p>Manage application shortcut settings and default configurations.</p>
       </div>
       
-      {% if user %}
       <div class="card">
-        <div class="card-title">Tone & Formatting Style</div>
-        <div class="card-desc">Incorporate specific output styling guidelines for Whisper.</div>
-        <form action="/update_settings" method="POST" style="display:flex;gap:16px;align-items:flex-end">
-          <div style="flex:1">
-            <label class="form-label">Active Tone</label>
+        <div class="card-title">Dictation Preferences & Custom Keys</div>
+        <div class="card-desc">Configure keys and speaking tones. Dynamic reloading handles updates instantly.</div>
+        <form action="/update_settings" method="POST">
+          <div class="form-group">
+            <label class="form-label">Active Formatting Tone</label>
             <select name="speaking_style">
-              <option value="Casual" {{ 'selected' if settings.speaking_style == 'Casual' }}>Casual (Fluent, conversational style)</option>
-              <option value="Formal" {{ 'selected' if settings.speaking_style == 'Formal' }}>Formal (Polished prose, punctuation-perfect)</option>
-              <option value="Serious" {{ 'selected' if settings.speaking_style == 'Serious' }}>Serious (Highly direct, minimal phrasing)</option>
-              <option value="Code" {{ 'selected' if settings.speaking_style == 'Code' }}>Code (Inline code blocks and variables)</option>
+              <option value="Casual" {{ 'selected' if settings.speaking_style == 'Casual' }}>Casual (conversational and natural)</option>
+              <option value="Formal" {{ 'selected' if settings.speaking_style == 'Formal' }}>Formal (strictly formatted, professional)</option>
+              <option value="Serious" {{ 'selected' if settings.speaking_style == 'Serious' }}>Serious (concise and direct)</option>
+              <option value="Code" {{ 'selected' if settings.speaking_style == 'Code' }}>Code (inserts syntax characters)</option>
             </select>
           </div>
+
+          <div class="form-group">
+            <label class="form-label">Push-to-Talk Hotkey</label>
+            <input type="text" name="hotkey_ptt" value="{{ settings.hotkey_ptt }}" placeholder="e.g. ctrl+windows" required>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Combine keys using "+" (e.g. ctrl+windows, ctrl+shift+z).</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Toggle Record Hotkey</label>
+            <input type="text" name="hotkey_toggle" value="{{ settings.hotkey_toggle }}" placeholder="e.g. ctrl+windows+space" required>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Combine keys using "+" (e.g. ctrl+windows+space, alt+space).</p>
+          </div>
+
           <input type="hidden" name="theme" id="theme-input" value="{{ theme }}">
-          <button type="submit" class="btn">Update Tone</button>
+          <button type="submit" class="btn">Save Preferences</button>
         </form>
       </div>
-      {% else %}
-      <div class="card" style="text-align:center;padding:48px">
-        <p style="color:var(--text-muted);margin-bottom:20px;font-weight:500">Sign in using Google to customize active settings and tones.</p>
-        <a href="/login" class="btn">Sign In</a>
-      </div>
-      {% endif %}
       
-      <div class="card" style="border-color:rgba(244,63,94,0.2)">
-        <div class="card-title" style="color:var(--danger)">Danger Actions</div>
-        <div class="card-desc">Wipe all application data stored in the local SQLite database.</div>
-        <form action="/clear_history" method="POST" onsubmit="return confirm('Wipe local database details completely?')">
+      <div class="card" style="border-color:var(--border)">
+        <div class="card-title" style="color:var(--danger)">Wipe Database</div>
+        <div class="card-desc">Erase history, customized vocab, and prompts.</div>
+        <form action="/clear_history" method="POST" onsubmit="return confirm('Wipe local database parameters?')">
           <button type="submit" class="btn btn-danger">Erase Local Database</button>
         </form>
       </div>
@@ -1027,7 +939,11 @@ function toggleTheme() {
 @app.route("/")
 def index():
     user = session.get('user')
-    settings = database.get_user_settings(user['email']) if user else {'speaking_style': 'Casual', 'theme': 'dark'}
+    email = user['email'] if user else "localuser@localhost"
+    settings = database.get_user_settings(email)
+    if not settings:
+        settings = {'speaking_style': 'Casual', 'theme': 'dark', 'hotkey_ptt': 'ctrl+windows', 'hotkey_toggle': 'ctrl+windows+space'}
+    
     theme = (settings.get('theme') or 'dark').lower()
 
     history_raw = database.get_history()
@@ -1070,19 +986,41 @@ def logout():
 @app.route("/update_settings", methods=["POST"])
 def update_settings():
     user = session.get('user')
-    if user:
-        database.update_user_settings(user['email'], request.form.get("speaking_style"), request.form.get("theme", "dark"))
+    email = user['email'] if user else "localuser@localhost"
+    
+    style = request.form.get("speaking_style", "Casual")
+    theme = request.form.get("theme", "dark")
+    ptt = request.form.get("hotkey_ptt", "ctrl+windows")
+    toggle = request.form.get("hotkey_toggle", "ctrl+windows+space")
+    
+    database.update_user_settings(email, style, theme, ptt, toggle)
     return redirect(url_for("index"))
 
 @app.route("/api/set_theme", methods=["POST"])
 def set_theme_api():
     user = session.get('user')
-    if user:
-        data = request.get_json() or {}
-        s = database.get_user_settings(user['email'])
-        if s:
-            database.update_user_settings(user['email'], s['speaking_style'], data.get('theme', 'dark'))
+    email = user['email'] if user else "localuser@localhost"
+    data = request.get_json() or {}
+    s = database.get_user_settings(email)
+    if s:
+        database.update_user_settings(email, s['speaking_style'], data.get('theme', 'dark'), s['hotkey_ptt'], s['hotkey_toggle'])
     return jsonify({"ok": True})
+
+@app.route("/add_to_dictionary", methods=["POST"])
+def add_to_dict():
+    word = request.form.get("word")
+    if word and word.strip():
+        database.add_to_dictionary(word.strip())
+    return redirect(url_for("index"))
+
+@app.route("/delete_from_dictionary/<word>")
+def delete_from_dict(word):
+    conn = sqlite3.connect(database.DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM dictionary WHERE word=?", (word,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("index"))
 
 @app.route("/clear_history", methods=["POST"])
 def clear_history():

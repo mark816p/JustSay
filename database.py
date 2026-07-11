@@ -31,9 +31,20 @@ def init_db():
             email TEXT PRIMARY KEY,
             name TEXT,
             speaking_style TEXT DEFAULT 'Casual',
-            theme TEXT DEFAULT 'Dark'
+            theme TEXT DEFAULT 'Dark',
+            hotkey_ptt TEXT DEFAULT 'ctrl+windows',
+            hotkey_toggle TEXT DEFAULT 'ctrl+windows+space'
         )
     ''')
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN hotkey_ptt TEXT DEFAULT 'ctrl+windows'")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN hotkey_toggle TEXT DEFAULT 'ctrl+windows+space'")
+    except sqlite3.OperationalError:
+        pass
+
     # Create Dictionary table (for Auto-dictionary)
     c.execute('''
         CREATE TABLE IF NOT EXISTS dictionary (
@@ -134,17 +145,23 @@ def save_user(email, name):
 def get_user_settings(email):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT speaking_style, theme FROM users WHERE email=?", (email,))
+    c.execute("SELECT speaking_style, theme, hotkey_ptt, hotkey_toggle FROM users WHERE email=?", (email,))
     row = c.fetchone()
     conn.close()
     if row:
-        return {"speaking_style": row[0], "theme": row[1]}
+        return {
+            "speaking_style": row[0],
+            "theme": row[1],
+            "hotkey_ptt": row[2] or "ctrl+windows",
+            "hotkey_toggle": row[3] or "ctrl+windows+space"
+        }
     return None
 
-def update_user_settings(email, speaking_style, theme):
+def update_user_settings(email, speaking_style, theme, hotkey_ptt="ctrl+windows", hotkey_toggle="ctrl+windows+space"):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("UPDATE users SET speaking_style=?, theme=? WHERE email=?", (speaking_style, theme, email))
+    c.execute("UPDATE users SET speaking_style=?, theme=?, hotkey_ptt=?, hotkey_toggle=? WHERE email=?", 
+              (speaking_style, theme, hotkey_ptt, hotkey_toggle, email))
     conn.commit()
     conn.close()
 

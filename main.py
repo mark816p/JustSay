@@ -34,30 +34,68 @@ class JustSayApp:
         self.server_process.start()
         self.widget_process.start()
 
-        # Register global hotkeys
-        # Hotkey 1: Ctrl+Win held = push-to-talk (hold to record)
-        # Hotkey 2: Ctrl+Win+Space = toggle record on/off
-        keyboard.add_hotkey("ctrl+windows", self._ptt_start, suppress=False)
-        keyboard.on_release_key("windows", self._ptt_stop_check)
-        keyboard.add_hotkey("ctrl+windows+space", self._toggle_record, suppress=True)
+        # Start the background hotkey listener thread
+        self.hotkey_thread = threading.Thread(target=self.hotkey_listener, daemon=True)
+        self.hotkey_thread.start()
 
         self.create_tray()
 
-    # ── Push-to-Talk ──────────────────────────────────────────
-    def _ptt_start(self):
-        """Called when Ctrl+Win is pressed (push-to-talk start)."""
-        # Only if Space is NOT pressed (to avoid conflict with toggle hotkey)
-        if keyboard.is_pressed("space"):
-            return
-        if not self.is_recording:
-            self.start_dictation()
+    def hotkey_listener(self):
+        ptt_was_pressed = False
+        toggle_was_pressed = False
+        
+        while True:
+            # Check db for latest user settings
+            settings = database.get_user_settings("localuser@localhost")
+            if settings:
+                ptt_hotkey = settings.get("hotkey_ptt", "ctrl+windows")
+                toggle_hotkey = settings.get("hotkey_toggle", "ctrl+windows+space")
+            else:
+                ptt_hotkey = "ctrl+windows"
+                toggle_hotkey = "ctrl+windows+space"
 
-    def _ptt_stop_check(self, e):
-        """Called when Win key is released — stop PTT if recording."""
-        if self.is_recording and not keyboard.is_pressed("ctrl+windows+space"):
-            self.stop_dictation()
+            def is_combo_pressed(combo):
+                if not combo:
+                    return False
+                keys = combo.lower().replace(" ", "").split("+")
+                try:
+                    # Translate common aliases
+                    translated = []
+                    for k in keys:
+                        if k in ("windows", "win"):
+                            translated.append("left windows") # keyboard library handles this well
+                        elif k in ("control", "ctrl"):
+                            translated.append("ctrl")
+                        else:
+                            translated.append(k)
+                    return all(keyboard.is_pressed(k) for k in translated)
+                except:
+                    return False
 
-    # ── Toggle Record ─────────────────────────────────────────
+            toggle_pressed = is_combo_pressed(toggle_hotkey)
+            ptt_pressed = is_combo_pressed(ptt_hotkey)
+
+            # Resolve toggle click
+            if toggle_pressed:
+                if not toggle_was_pressed:
+                    toggle_was_pressed = True
+                    self._toggle_record()
+            else:
+                toggle_was_pressed = False
+
+            # Resolve PTT hold
+            if ptt_pressed and not toggle_pressed:
+                if not self.is_recording and not ptt_was_pressed:
+                    ptt_was_pressed = True
+                    self.start_dictation()
+            else:
+                if ptt_was_pressed:
+                    ptt_was_pressed = False
+                    if self.is_recording:
+                        self.stop_dictation()
+
+            time.sleep(0.05)
+
     def _toggle_record(self):
         with self.toggle_lock:
             if self.is_recording:
@@ -105,7 +143,7 @@ class JustSayApp:
 
     # ── Tray ──────────────────────────────────────────────────
     def create_tray(self):
-        image = Image.new('RGB', (64, 64), color=(124, 92, 252))
+        image = Image.new('RGB', (64, 64), color=(80, 80, 80))
         menu = (
             item('Open Dashboard', self.open_dashboard),
             item('Quit JustSay', self.quit_app)
