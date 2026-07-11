@@ -1,12 +1,2 @@
-faster-whisper
-keyboard
-pyautogui
-pyaudio
-soundfile
-numpy
-pyperclip
-pystray
-Pillow
-pyinstaller
-Flask
-PyQt6
+authlib
+requests
