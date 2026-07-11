@@ -1,60 +1,72 @@
-# JustSay - Local Dictation App for Windows
+# JustSay — Local Voice Dictation OS for Windows
 
-JustSay is a sleek, locally-run dictation application designed for Windows, inspired by Wispr Flow. It uses powerful offline AI models (via faster-whisper) to convert your speech into text instantly and types it directly into your active window.
+JustSay is an ultra-fast, local-first, privacy-respecting dictation system for Windows. Built on top of `faster-whisper` and designed with a premium, custom dashboard, JustSay allows you to type with your voice anywhere on your system using high-efficiency offline neural models.
 
-## Features
+---
 
-- **Offline & Private**: Powered by `faster-whisper`. Audio is processed entirely on your machine.
-- **Global Hotkey**: Hold `Ctrl+Shift+Space` from anywhere to start dictating.
-- **Auto-Type**: Release the hotkey, and JustSay instantly types your transcribed text into your currently focused application.
-- **System Tray Integration**: Unobtrusive. Minimizes to the system tray so it stays out of your way.
-- **Modern UI**: Clean, dark-mode interface built with CustomTkinter.
+## 🌟 Key Features
 
-## Installation
+*   **Universal Offline Dictation:** Instantly transcribe your voice in any active text box across Windows using a local Whisper model.
+*   **Push-to-Talk & Toggles:** Use system-wide keyboard triggers to record exactly when you want.
+*   **Real-time Waveform Overlay:** A beautiful floating UI pill sits above your taskbar during recording to show live audio capture.
+*   **Undo & Quick Correction (Local Vocabulary):** Dictated something wrong? Click the 4-second "Undo & Correct" floating pill to undo the text and teach JustSay the correct spelling.
+*   **AI Instructions / Formatting Rules:** Inject custom system prompts to guide formatting, capitalization, or markdown injection.
+*   **Speech Insights & Telemetry:** Review local statistics on words dictated, session history, and speaking flow styles.
+*   **100% On-Device Isolation:** Audio captures, transcripts, settings, and database entries are stored entirely on your device. Absolutely no telemetry leaves your machine.
+*   **Premium Web Dashboard:** Configure settings, manage active rules, browse history, play audio files, and toggle Dark/Light themes at `http://localhost:2000`.
 
-### Option 1: Use the Installer (Recommended)
-Download the `JustSay.exe` from the latest release (or build it yourself) and run it. No installation is necessary—it's a standalone portable app!
+---
 
-### Option 2: Run from Source
-Make sure you have Python 3.9+ installed.
+## 🎹 Global Shortcuts
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/mark816p/JustSay.git
-   cd JustSay
-   ```
+| Shortcut Key | Function | Description |
+| :--- | :--- | :--- |
+| **`Ctrl` + `Win` (Hold)** | **Push-to-Talk** | Hold to record audio, release to instantly paste text. |
+| **`Ctrl` + `Win` + `Space`** | **Toggle Record** | Tap once to start, tap again to finish. Ideal for hands-free dictation. |
+| **`Click Overlay Pill`** | **Undo & Correct** | Pops up for 4 seconds after dictating. Click to undo and train the model. |
 
-2. Create a virtual environment:
-   ```powershell
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
-   ```
+---
 
-3. Install dependencies:
-   ```powershell
-   pip install -r requirements.txt
-   ```
+## 🛠️ Requirements & Dependencies
 
-4. Run the app:
-   ```powershell
-   python main.py
-   ```
+JustSay uses a modular, local multi-processing system:
+*   **Backend engine:** `faster-whisper` (utilizing the Whisper `base` model).
+*   **Database:** SQLite (local persistent settings, rules, dictionary, and history).
+*   **Control Center / Dashboard:** Flask web server running at `http://localhost:2000` with full dark/light modes.
+*   **Overlay Widget:** PyQt6 frameless transparent pill.
+*   **System Listeners:** `keyboard`, `pyperclip`, and `pyaudio` for desktop hooks.
 
-## Usage
-
-1. Launch JustSay.
-2. Wait for the status to say "Idle. Ready to dictate." (It downloads a tiny Whisper model on first run).
-3. Select the text field in any application where you want to type.
-4. **Hold down `Ctrl + Shift + Space`** and speak.
-5. **Release the keys**. The app will transcribe your speech and instantly paste it!
-6. Click "Hide to Tray" to keep it running in the background.
-
-## Building the Executable
-
-Run the provided PowerShell script to build your own standalone `.exe`:
-
-```powershell
-.\build.ps1
+To run/compile manually, install the requirements:
+```bash
+pip install -r requirements.txt
 ```
 
-The compiled application will be located in the `dist/` folder.
+---
+
+## 🚀 Building & Installation
+
+### Option 1: Automatic Installer
+JustSay comes with a PowerShell script to set up, install, and add standard shortcuts to your Start Menu and Desktop:
+1. Open PowerShell as Administrator.
+2. Run the installer:
+   ```powershell
+   .\Install-JustSay.ps1
+   ```
+
+### Option 2: Build Executable Manually
+To build a standalone executable that runs inside the system tray:
+1. Run the build script:
+   ```powershell
+   .\build.ps1
+   ```
+2. The built binary can be found in `dist/JustSay.exe`.
+
+---
+
+## 🔒 Privacy & Local Sovereignty
+
+Unlike cloud dictation APIs, JustSay runs completely locally.
+*   No transcription data is transmitted to the cloud.
+*   History recordings are saved directly into the `history_audio/` subdirectory.
+*   Settings, statistics, and instructions are kept locally inside `justsay_data.db`.
+*   Google Login is only utilized for local profiling/saving of preferences, and does not upload your telemetry.

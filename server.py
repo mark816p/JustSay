@@ -26,275 +26,686 @@ def get_audio_filename(path):
 
 def generate_insights(history):
     if not history:
-        return "No data yet", 0
+        return "Analyzing style...", 0
     text = " ".join([h['transcript'] for h in history]).lower()
     words = text.split()
     if not words:
-        return "No data yet", 0
-    fillers = ['um', 'uh', 'like', 'you know', 'so']
+        return "Analyzing style...", 0
+    fillers = ['um', 'uh', 'like', 'you know', 'so', 'basically', 'actually']
     filler_count = sum(1 for w in words if w in fillers)
     avg_len = len(words) / len(history)
-    score = int(min(100, max(0, 100 - (filler_count / max(len(words), 1)) * 300)))
+    score = int(min(100, max(0, 100 - (filler_count / max(len(words), 1)) * 400)))
     if filler_count > len(words) * 0.05:
-        return "Hesitant Speaker", score
-    elif avg_len > 20:
-        return "Highly Descriptive", score
-    elif avg_len < 5:
+        return "Conversational (Filler-Heavy)", score
+    elif avg_len > 25:
+        return "Expressive & Detailed", score
+    elif avg_len < 6:
         return "Concise & Direct", score
     else:
-        return "Balanced & Natural", score
+        return "Fluent & Professional", score
 
 HTML = r"""<!DOCTYPE html>
 <html lang="en" data-theme="{{ theme }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>JustSay</title>
+<title>JustSay — Local Voice Dictation Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root {
-  --r: 14px;
-  --accent: #7c5cfc;
-  --accent2: #c084fc;
+  --r-lg: 20px;
+  --r-md: 14px;
+  --r-sm: 8px;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
   --danger: #f43f5e;
+  --danger-light: #fda4af;
   --success: #10b981;
-  --trans: all .2s ease;
+  --trans: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
+
 [data-theme=dark]{
-  --bg: #0d0d14;
-  --bg2: #13131f;
-  --bg3: #1a1a2e;
-  --border: rgba(255,255,255,.07);
-  --text: #f0f0ff;
-  --text2: rgba(240,240,255,.55);
-  --card: rgba(255,255,255,.04);
-  --card-hover: rgba(255,255,255,.07);
-  --shadow: 0 8px 32px rgba(0,0,0,.4);
-  --glow: rgba(124,92,252,.15);
+  --bg: #09090b;
+  --bg-sidebar: #0f0f13;
+  --bg-card: rgba(20, 20, 27, 0.7);
+  --bg-hover: rgba(30, 30, 42, 0.8);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(99, 102, 241, 0.4);
+  --text: #fafafa;
+  --text-muted: #8b8e9f;
+  --shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.6);
+  --glow: rgba(99, 102, 241, 0.12);
+  --glass-bg: rgba(9, 9, 11, 0.75);
 }
+
 [data-theme=light]{
-  --bg: #f4f4f8;
-  --bg2: #eeeef5;
-  --bg3: #e8e8f0;
-  --border: rgba(0,0,0,.08);
-  --text: #0d0d1a;
-  --text2: rgba(13,13,26,.5);
-  --card: rgba(255,255,255,.7);
-  --card-hover: rgba(255,255,255,.9);
-  --shadow: 0 4px 20px rgba(0,0,0,.08);
-  --glow: rgba(124,92,252,.08);
+  --bg: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-hover: rgba(241, 245, 249, 0.9);
+  --border: rgba(0, 0, 0, 0.06);
+  --border-focus: rgba(99, 102, 241, 0.3);
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.05);
+  --glow: rgba(99, 102, 241, 0.04);
+  --glass-bg: rgba(255, 255, 255, 0.8);
 }
 
-html{font-size:16px}
-body{
-  font-family:'Inter',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  transition:background .3s,color .3s;
-  -webkit-font-smoothing:antialiased;
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* SIDEBAR LAYOUT */
-.layout{display:flex;min-height:100vh}
-
-.sidebar{
-  width:240px;min-width:240px;
-  background:var(--bg2);
-  border-right:1px solid var(--border);
-  display:flex;flex-direction:column;
-  padding:28px 0;
-  position:sticky;top:0;height:100vh;
-  overflow-y:auto;
+/* APP LAYOUT */
+.layout {
+  display: flex;
+  min-height: 100vh;
 }
 
-.sidebar-logo{
-  padding:0 24px 28px;
-  border-bottom:1px solid var(--border);
-  margin-bottom:20px;
-}
-.sidebar-logo .logo-text{
-  font-size:1.5rem;font-weight:700;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;
-}
-.sidebar-logo .logo-sub{font-size:.72rem;color:var(--text2);margin-top:2px;letter-spacing:.5px;text-transform:uppercase;}
-
-.nav-item{
-  display:flex;align-items:center;gap:12px;
-  padding:11px 24px;font-size:.88rem;font-weight:500;
-  color:var(--text2);cursor:pointer;
-  border-left:3px solid transparent;
-  transition:var(--trans);text-decoration:none;
-}
-.nav-item:hover,.nav-item.active{
-  color:var(--text);
-  background:var(--card);
-  border-left-color:var(--accent);
-}
-.nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.7}
-.nav-item:hover svg,.nav-item.active svg{opacity:1}
-
-.nav-section-title{
-  font-size:.68rem;font-weight:600;letter-spacing:.8px;
-  text-transform:uppercase;color:var(--text2);
-  padding:16px 24px 6px;
+/* SIDEBAR */
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 32px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 10;
 }
 
-.sidebar-bottom{
-  margin-top:auto;padding:20px 24px 0;
-  border-top:1px solid var(--border);
+.sidebar-logo {
+  padding: 0 28px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
 }
-.theme-btn{
-  display:flex;align-items:center;gap:10px;
-  background:var(--card);border:1px solid var(--border);
-  border-radius:10px;padding:10px 14px;
-  cursor:pointer;font-size:.85rem;font-weight:500;
-  color:var(--text);width:100%;transition:var(--trans);
+
+.logo-text {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
-.theme-btn:hover{background:var(--card-hover)}
+
+.logo-sub {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-top: 4px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.nav-section-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 20px 28px 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 28px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  transition: var(--trans);
+  text-decoration: none;
+}
+
+.nav-item:hover, .nav-item.active {
+  color: var(--text);
+  background: var(--bg-hover);
+  border-left-color: var(--accent);
+}
+
+.nav-item svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: var(--trans);
+}
+
+.nav-item:hover svg, .nav-item.active svg {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 24px 28px 0;
+  border-top: 1px solid var(--border);
+}
+
+.theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  width: 100%;
+  transition: var(--trans);
+}
+
+.theme-btn:hover {
+  border-color: var(--accent);
+}
 
 /* MAIN CONTENT */
-.main{flex:1;padding:40px 48px;overflow-y:auto;max-width:960px}
-
-.page-header{margin-bottom:36px}
-.page-header h1{font-size:1.8rem;font-weight:700;margin-bottom:6px}
-.page-header p{color:var(--text2);font-size:.9rem}
-
-/* STAT CARDS */
-.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
-.stat-card{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:var(--r);padding:24px;
-  transition:var(--trans);position:relative;overflow:hidden;
+.main {
+  flex: 1;
+  padding: 48px 64px;
+  overflow-y: auto;
+  max-width: 1100px;
 }
-.stat-card::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(circle at top right,var(--glow),transparent 70%);
-  pointer-events:none;
+
+.page-header {
+  margin-bottom: 40px;
 }
-.stat-card:hover{background:var(--card-hover);box-shadow:var(--shadow)}
-.stat-label{font-size:.75rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);margin-bottom:10px}
-.stat-value{font-size:2.4rem;font-weight:700;line-height:1;margin-bottom:4px}
-.stat-value.accent{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.stat-sub{font-size:.8rem;color:var(--text2)}
+
+.page-header h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.75px;
+  margin-bottom: 8px;
+}
+
+.page-header p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
 
 /* CARDS */
-.card{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:var(--r);padding:28px;
-  margin-bottom:20px;transition:var(--trans);
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
 }
-.card:hover{background:var(--card-hover)}
-.card-title{font-size:1rem;font-weight:600;margin-bottom:4px}
-.card-desc{font-size:.82rem;color:var(--text2);margin-bottom:20px}
 
-/* INPUTS */
-input[type=text],select,textarea{
-  background:var(--bg3);
-  border:1px solid var(--border);
-  border-radius:9px;padding:10px 14px;
-  color:var(--text);font-family:'Inter',sans-serif;
-  font-size:.88rem;width:100%;
-  transition:var(--trans);outline:none;
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--trans);
 }
-input[type=text]:focus,select:focus,textarea:focus{
-  border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(124,92,252,.15);
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, var(--glow), transparent 70%);
+  pointer-events: none;
 }
-select option{background:var(--bg2)}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.75px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.stat-value {
+  font-size: 2.8rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 6px;
+  letter-spacing: -1px;
+}
+
+.stat-value.accent {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 32px;
+  margin-bottom: 24px;
+  transition: var(--trans);
+}
+
+.card:hover {
+  border-color: var(--border-focus);
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  letter-spacing: -0.25px;
+}
+
+.card-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+
+/* FORMS & INPUTS */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+input[type=text], select, textarea {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  width: 100%;
+  transition: var(--trans);
+  outline: none;
+}
+
+input[type=text]:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
 
 /* BUTTONS */
-.btn{
-  display:inline-flex;align-items:center;gap:8px;
-  background:var(--accent);color:#fff;
-  border:none;border-radius:9px;padding:10px 20px;
-  font-size:.88rem;font-weight:600;cursor:pointer;
-  font-family:'Inter',sans-serif;transition:var(--trans);
-  text-decoration:none;white-space:nowrap;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  padding: 12px 24px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: var(--trans);
+  text-decoration: none;
+  white-space: nowrap;
 }
-.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
-.btn:active{transform:translateY(0)}
-.btn-sm{padding:7px 14px;font-size:.8rem;border-radius:7px}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
-.btn-ghost:hover{background:var(--card-hover);filter:none}
-.btn-danger{background:var(--danger)}
-.btn-success{background:var(--success)}
-.btn-outline-accent{background:transparent;border:1px solid var(--accent);color:var(--accent)}
-.btn-outline-accent:hover{background:var(--accent);color:#fff;filter:none}
 
-/* INLINE FORM ROW */
-.form-row{display:flex;gap:12px;align-items:center}
-.form-row input{flex:1}
-.form-group{margin-bottom:16px}
-.form-label{display:block;font-size:.8rem;font-weight:600;color:var(--text2);margin-bottom:6px;letter-spacing:.3px}
-
-/* TABLE */
-.table-wrap{overflow-x:auto;margin-top:12px}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;font-size:.72rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);padding:10px 14px;border-bottom:1px solid var(--border)}
-td{padding:12px 14px;font-size:.85rem;border-bottom:1px solid var(--border);vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--card)}
-
-/* BADGES */
-.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
-.badge-active{background:rgba(16,185,129,.12);color:#10b981}
-.badge-accent{background:rgba(124,92,252,.12);color:var(--accent)}
-
-/* TAGS */
-.tags{display:flex;flex-wrap:wrap;gap:8px}
-.tag{background:rgba(124,92,252,.1);color:var(--accent);border:1px solid rgba(124,92,252,.2);padding:5px 12px;border-radius:20px;font-size:.8rem;font-weight:500}
-
-/* SHORTCUT KEY DISPLAY */
-.shortcut-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.shortcut-card{
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:10px;padding:16px 18px;
-  display:flex;align-items:flex-start;gap:14px;
+.btn:hover {
+  background: var(--accent-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
 }
-.shortcut-keys{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
-kbd{
-  background:var(--bg2);border:1px solid var(--border);
-  border-bottom:3px solid var(--border);
-  border-radius:6px;padding:4px 9px;
-  font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);
-}
-.shortcut-desc{font-size:.8rem;color:var(--text2)}
 
-/* AUDIO PLAYER */
-audio{height:34px;width:100%;filter:hue-rotate(240deg)}
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  border-radius: var(--r-sm);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-hover);
+  border-color: var(--text);
+  color: var(--text);
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-danger {
+  background: var(--danger);
+}
+.btn-danger:hover {
+  background: #f43f5e;
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
+}
+
+.btn-outline-accent {
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+}
+
+.btn-outline-accent:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+.form-row input {
+  flex: 1;
+}
+
+/* TABLES */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--border);
+}
+
+td {
+  padding: 16px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover td {
+  background: var(--bg-hover);
+}
+
+/* BADGES & CHIPS */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.25px;
+}
+
+.badge-active {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.badge-accent {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  background: var(--bg);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: var(--trans);
+}
+
+.tag:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+/* SHORTCUT CARDS */
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.shortcut-card {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+kbd {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  border-bottom: 3.5px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.05);
+}
+
+.shortcut-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* CUSTOM AUDIO CONTROLS WRAPPER */
+.audio-container {
+  display: flex;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 6px 12px;
+  max-width: 320px;
+}
+
+audio {
+  height: 36px;
+  width: 100%;
+  border-radius: var(--r-sm);
+  outline: none;
+}
 
 /* PRIVACY BANNER */
-.privacy-banner{
-  display:flex;align-items:center;gap:10px;
-  background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.15);
-  border-radius:10px;padding:12px 16px;margin-bottom:20px;
-  font-size:.82rem;color:var(--text2);
+.privacy-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.privacy-banner strong {
+  color: var(--success);
 }
 
 /* PROGRESS BAR */
-.progress-bar{background:var(--bg3);border-radius:99px;height:8px;margin-top:8px;overflow:hidden}
-.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.progress-bar {
+  background: var(--bg);
+  border-radius: 99px;
+  height: 8px;
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
 
-/* USER CHIP */
-.user-chip{display:flex;align-items:center;gap:10px;padding:12px 24px 20px;border-bottom:1px solid var(--border);margin-bottom:10px}
-.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:#fff;flex-shrink:0}
-.user-name{font-size:.85rem;font-weight:600;line-height:1.2}
-.user-email{font-size:.72rem;color:var(--text2)}
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent-gradient);
+  transition: width 0.5s ease;
+}
 
-/* SECTION HIDDEN BY DEFAULT */
-.section{display:none}
-.section.active{display:block}
+/* USER PROFILE INFO */
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 28px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+}
+
+.user-details {
+  overflow: hidden;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* SECTION TRANSITIONS */
+.section {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.section.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* SCROLLBAR */
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
 </style>
 </head>
 <body>
@@ -304,56 +715,58 @@ audio{height:34px;width:100%;filter:hue-rotate(240deg)}
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-text">JustSay</div>
-      <div class="logo-sub">Voice AI · Local</div>
+      <div class="logo-sub">Private Audio OS</div>
     </div>
 
     {% if user %}
     <div class="user-chip">
       <div class="user-avatar">{{ user.name[0].upper() }}</div>
-      <div>
+      <div class="user-details">
         <div class="user-name">{{ user.name }}</div>
         <div class="user-email">{{ user.email }}</div>
       </div>
     </div>
     {% endif %}
 
-    <span class="nav-section-title">Main</span>
+    <span class="nav-section-title">Analysis & Logs</span>
     <a class="nav-item active" onclick="showSection('overview',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       Overview
     </a>
     <a class="nav-item" onclick="showSection('history',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      History
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      History logs
     </a>
+    
+    <span class="nav-section-title">Customisation</span>
     <a class="nav-item" onclick="showSection('dictionary',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      Dictionary
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      Vocabulary
     </a>
     <a class="nav-item" onclick="showSection('prompts',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       Instructions
     </a>
 
-    <span class="nav-section-title">System</span>
+    <span class="nav-section-title">Configuration</span>
     <a class="nav-item" onclick="showSection('shortcuts',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
       Shortcuts
     </a>
     <a class="nav-item" onclick="showSection('settings',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Preferences
     </a>
 
     <div class="sidebar-bottom">
       {% if user %}
-        <a href="/logout" class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:10px">Sign Out</a>
+        <a href="/logout" class="btn btn-ghost" style="width:100%;margin-bottom:12px">Sign Out</a>
       {% else %}
-        <a href="/login" class="btn" style="width:100%;justify-content:center;margin-bottom:10px">Login with Google</a>
+        <a href="/login" class="btn" style="width:100%;margin-bottom:12px">Sign In (Google)</a>
       {% endif %}
       <button class="theme-btn" onclick="toggleTheme()">
         <span id="theme-icon">{{ "🌙" if theme == "dark" else "☀️" }}</span>
-        <span id="theme-label">{{ "Dark Mode" if theme == "dark" else "Light Mode" }}</span>
+        <span id="theme-label">{{ "Dark UI" if theme == "dark" else "Light UI" }}</span>
       </button>
     </div>
   </aside>
@@ -365,50 +778,51 @@ audio{height:34px;width:100%;filter:hue-rotate(240deg)}
     <div id="sec-overview" class="section active">
       <div class="page-header">
         <h1>Overview</h1>
-        <p>Your voice activity and insights at a glance.</p>
+        <p>Real-time analytics and telemetry of your local voice sessions.</p>
       </div>
-      <div class="stats-row">
+      
+      <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">Dictations</div>
+          <div class="stat-label">Total Dictations</div>
           <div class="stat-value accent">{{ stats.total_dictations }}</div>
-          <div class="stat-sub">Total sessions</div>
+          <div class="stat-sub">Completed sessions</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Words Spoken</div>
+          <div class="stat-label">Words Logged</div>
           <div class="stat-value accent">{{ stats.total_words }}</div>
-          <div class="stat-sub">Across all sessions</div>
+          <div class="stat-sub">Words typed via audio</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Speaking Style</div>
-          <div class="stat-value" style="font-size:1.3rem;padding-top:6px;">{{ insight_label }}</div>
-          <div class="stat-sub">Fluency score</div>
+          <div class="stat-label">Speaking Rhythm</div>
+          <div class="stat-value" style="font-size:1.3rem;padding-top:10px;font-weight:700">{{ insight_label }}</div>
+          <div class="stat-sub">Vocabulary flow index</div>
           <div class="progress-bar"><div class="progress-fill" style="width:{{ insight_score }}%"></div></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">How to Use</div>
-        <div class="card-desc">Your keyboard shortcuts are active whenever JustSay is running in the tray.</div>
+        <div class="card-title">Direct Shortcuts</div>
+        <div class="card-desc">JustSay runs transparently in the background. Use these keys in any app.</div>
         <div class="shortcut-grid">
           <div class="shortcut-card">
             <div>
               <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Win</kbd></div>
-              <div class="card-title" style="font-size:.88rem">Push-to-Talk</div>
-              <div class="shortcut-desc">Hold to record. Releases when you let go.</div>
+              <div class="card-title" style="font-size:0.95rem;margin-bottom:4px">Push-to-Talk</div>
+              <div class="shortcut-desc">Hold keys to record audio. Release them to transcribe and paste instantly.</div>
             </div>
           </div>
           <div class="shortcut-card">
             <div>
               <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Win</kbd><span>+</span><kbd>Space</kbd></div>
-              <div class="card-title" style="font-size:.88rem">Toggle Record</div>
-              <div class="shortcut-desc">Press once to start, press again to stop and transcribe.</div>
+              <div class="card-title" style="font-size:0.95rem;margin-bottom:4px">Toggle Recording</div>
+              <div class="shortcut-desc">Press once to start recording. Press again to finish. Useful for long speech.</div>
             </div>
           </div>
         </div>
       </div>
 
       <div class="privacy-banner">
-        🔒 <strong>100% Private.</strong>&nbsp;All audio and transcripts are processed and stored exclusively on your machine. Nothing is sent to any server.
+        🔒 <strong>Local Isolation:</strong> &nbsp;This system does not dispatch data to cloud servers. All neural model evaluation is conducted locally on your computer.
       </div>
     </div>
 
@@ -417,31 +831,33 @@ audio{height:34px;width:100%;filter:hue-rotate(240deg)}
       <div class="page-header">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
-            <h1>History</h1>
-            <p>All of your past dictation sessions, stored locally.</p>
+            <h1>History Logs</h1>
+            <p>Your previous transcriptions and audio captures.</p>
           </div>
-          <form action="/clear_history" method="POST" onsubmit="return confirm('Permanently delete all local history?')">
-            <button type="submit" class="btn btn-danger btn-sm">Wipe All Data</button>
+          <form action="/clear_history" method="POST" onsubmit="return confirm('Wipe all local recordings and logs permanently?')">
+            <button type="submit" class="btn btn-danger btn-sm">Clear Log History</button>
           </form>
         </div>
       </div>
-      <div class="privacy-banner">
-        🔒 Audio and transcripts never leave your device. Deletion is permanent and immediate.
-      </div>
+      
       <div class="card" style="padding:0;overflow:hidden">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Time</th><th>Transcript</th><th>Words</th><th>Playback</th></tr></thead>
+            <thead><tr><th>Timestamp</th><th>Transcribed Content</th><th>Length</th><th>Audio Wave</th></tr></thead>
             <tbody>
             {% for h in history %}
             <tr>
-              <td style="white-space:nowrap;color:var(--text2);font-size:.78rem">{{ h.timestamp }}</td>
-              <td style="max-width:340px">{{ h.transcript }}</td>
-              <td><span class="badge badge-accent">{{ h.word_count }}</span></td>
-              <td><audio controls><source src="/audio/{{ h.audio_filename }}" type="audio/wav"></audio></td>
+              <td style="white-space:nowrap;color:var(--text-muted);font-size:0.8rem;font-family:var(--font-mono)">{{ h.timestamp }}</td>
+              <td style="line-height:1.5;max-width:380px;font-weight:500">{{ h.transcript }}</td>
+              <td><span class="badge badge-accent">{{ h.word_count }} words</span></td>
+              <td>
+                <div class="audio-container">
+                  <audio controls><source src="/audio/{{ h.audio_filename }}" type="audio/wav"></audio>
+                </div>
+              </td>
             </tr>
             {% else %}
-            <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text2)">No history yet. Start dictating!</td></tr>
+            <tr><td colspan="4" style="text-align:center;padding:48px;color:var(--text-muted);font-style:italic">No local voice sessions logged yet.</td></tr>
             {% endfor %}
             </tbody>
           </table>
@@ -449,53 +865,56 @@ audio{height:34px;width:100%;filter:hue-rotate(240deg)}
       </div>
     </div>
 
-    <!-- DICTIONARY -->
+    <!-- VOCABULARY -->
     <div id="sec-dictionary" class="section">
       <div class="page-header">
-        <h1>Learned Dictionary</h1>
-        <p>Custom words and names the AI prioritises. Added automatically when you use Undo &amp; Correct.</p>
+        <h1>Local Vocabulary</h1>
+        <p>Custom dictionary names, jargon, and words the transcription engine will prioritize.</p>
       </div>
       <div class="card">
-        <div class="card-title">Your Words</div>
-        <div class="card-desc">These terms are fed directly into the transcription engine to improve accuracy.</div>
+        <div class="card-title">Known Vocabulary Terms</div>
+        <div class="card-desc">Clicking "Undo & Correct" on the visual waveform pill appends terms here.</div>
         <div class="tags">
           {% for word in dictionary %}
             <span class="tag">{{ word }}</span>
           {% else %}
-            <span style="color:var(--text2);font-size:.85rem;font-style:italic">Empty. After dictating, use the Undo &amp; Correct pop-up to teach JustSay new words.</span>
+            <span style="color:var(--text-muted);font-size:0.9rem;font-style:italic">Your customized dictionary is currently empty. Use the quick Undo pill when dictating to add corrections.</span>
           {% endfor %}
         </div>
       </div>
     </div>
 
-    <!-- PROMPTS / INSTRUCTIONS -->
+    <!-- INSTRUCTIONS -->
     <div id="sec-prompts" class="section">
       <div class="page-header">
-        <h1>Custom Instructions</h1>
-        <p>Tell the AI how to format your transcriptions. One rule is active at a time.</p>
+        <h1>AI Formatting Instructions</h1>
+        <p>Specify prompts to guide structural formatting (e.g. casing, styling, code formatting).</p>
       </div>
+      
       <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Create Formatting Rule</div>
         <form action="/add_prompt" method="POST" class="form-row">
-          <input type="text" name="prompt_text" placeholder="e.g. Always capitalise product names. Use Markdown for code.">
+          <input type="text" name="prompt_text" placeholder="e.g. Always write code blocks in markdown. Format dates as DD-MM-YYYY." required>
           <button type="submit" class="btn">Add Rule</button>
         </form>
       </div>
+
       <div class="card" style="padding:0;overflow:hidden">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Status</th><th>Rule</th><th style="text-align:right">Actions</th></tr></thead>
+            <thead><tr><th>Status</th><th>Rule Details</th><th style="text-align:right">Action</th></tr></thead>
             <tbody>
             {% for p in prompts %}
             <tr>
-              <td>
-                {% if p.is_active %}<span class="badge badge-active">● Active</span>
+              <td style="width:140px">
+                {% if p.is_active %}<span class="badge badge-active">Active</span>
                 {% else %}<a href="/set_active/{{ p.id }}" class="btn btn-sm btn-outline-accent">Activate</a>{% endif %}
               </td>
-              <td>{{ p.prompt_text }}</td>
-              <td style="text-align:right"><a href="/delete_prompt/{{ p.id }}" class="btn btn-sm btn-ghost" style="color:var(--danger);border-color:var(--danger)">Delete</a></td>
+              <td style="font-weight:600">{{ p.prompt_text }}</td>
+              <td style="text-align:right"><a href="/delete_prompt/{{ p.id }}" class="btn btn-sm btn-ghost" style="color:var(--danger);border-color:var(--danger)">Remove</a></td>
             </tr>
             {% else %}
-            <tr><td colspan="3" style="text-align:center;padding:40px;color:var(--text2)">No rules yet.</td></tr>
+            <tr><td colspan="3" style="text-align:center;padding:48px;color:var(--text-muted);font-style:italic">No customized rules added yet.</td></tr>
             {% endfor %}
             </tbody>
           </table>
@@ -507,68 +926,70 @@ audio{height:34px;width:100%;filter:hue-rotate(240deg)}
     <div id="sec-shortcuts" class="section">
       <div class="page-header">
         <h1>Keyboard Shortcuts</h1>
-        <p>Global hotkeys — work in any application while JustSay is running.</p>
+        <p>Global triggers active across the entire operating system environment.</p>
       </div>
-      <div class="shortcut-grid" style="grid-template-columns:1fr">
-        <div class="shortcut-card">
+      <div class="shortcut-grid" style="grid-template-columns:1fr;gap:20px">
+        <div class="shortcut-card" style="background:var(--bg-card)">
           <div>
-            <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>⊞ Win</kbd></div>
-            <div class="card-title" style="margin-bottom:6px">Push-to-Talk</div>
-            <div class="shortcut-desc">Hold the keys to record. The moment you release, JustSay transcribes and types the text into your active application.</div>
+            <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Win</kbd></div>
+            <div class="card-title" style="margin-bottom:8px">Push-to-Talk (Hold)</div>
+            <div class="shortcut-desc">Press and hold these keys down. Speak normally. The moment you release both keys, recording stops, Whisper processes it, and the text is pasted immediately into the active text focus.</div>
           </div>
         </div>
-        <div class="shortcut-card" style="margin-top:14px">
+        <div class="shortcut-card" style="background:var(--bg-card)">
           <div>
-            <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>⊞ Win</kbd><span>+</span><kbd>Space</kbd></div>
-            <div class="card-title" style="margin-bottom:6px">Toggle Recording</div>
-            <div class="shortcut-desc">Press once to start recording. Press again to stop. Ideal for longer dictations where you don't want to hold the keys.</div>
+            <div class="shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Win</kbd><span>+</span><kbd>Space</kbd></div>
+            <div class="card-title" style="margin-bottom:8px">Toggle Recording State (Tap)</div>
+            <div class="shortcut-desc">Tap once to begin recording. Tap again to terminate recording and perform automatic pasting. Ideal for hands-free speech.</div>
           </div>
         </div>
-        <div class="shortcut-card" style="margin-top:14px">
+        <div class="shortcut-card" style="background:var(--bg-card)">
           <div>
-            <div class="shortcut-keys"><kbd>Undo Popup</kbd></div>
-            <div class="card-title" style="margin-bottom:6px">Undo &amp; Correct (on-screen)</div>
-            <div class="shortcut-desc">After every transcription, a 4-second floating pill appears. Click "Undo &amp; Correct" to revert the paste and teach JustSay the correct word.</div>
+            <div class="shortcut-keys"><kbd>Undo Pill</kbd></div>
+            <div class="card-title" style="margin-bottom:8px">Undo &amp; Learn Corrections</div>
+            <div class="shortcut-desc">When dictation completes, a small visual button saying "Undo &amp; Correct" appears for 4 seconds on top of all windows. Click it to undo typing and type the correct spelling so the AI learns the word.</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- SETTINGS -->
+    <!-- PREFERENCES -->
     <div id="sec-settings" class="section">
       <div class="page-header">
-        <h1>Settings</h1>
-        <p>Configure your transcription preferences.</p>
+        <h1>Preferences</h1>
+        <p>Manage application preferences and user configurations.</p>
       </div>
+      
       {% if user %}
       <div class="card">
-        <div class="card-title">Speaking Style</div>
-        <div class="card-desc">Controls how the AI formats your transcriptions.</div>
-        <form action="/update_settings" method="POST" style="display:flex;gap:12px;align-items:flex-end">
+        <div class="card-title">Tone & Formatting Style</div>
+        <div class="card-desc">Incorporate specific output styling guidelines for Whisper.</div>
+        <form action="/update_settings" method="POST" style="display:flex;gap:16px;align-items:flex-end">
           <div style="flex:1">
-            <label class="form-label">Tone</label>
+            <label class="form-label">Active Tone</label>
             <select name="speaking_style">
-              <option value="Casual" {{ 'selected' if settings.speaking_style == 'Casual' }}>Casual (relaxed, natural)</option>
-              <option value="Formal" {{ 'selected' if settings.speaking_style == 'Formal' }}>Formal (polished, professional)</option>
-              <option value="Serious" {{ 'selected' if settings.speaking_style == 'Serious' }}>Serious (direct, concise)</option>
-              <option value="Code" {{ 'selected' if settings.speaking_style == 'Code' }}>Code / Technical</option>
+              <option value="Casual" {{ 'selected' if settings.speaking_style == 'Casual' }}>Casual (Fluent, conversational style)</option>
+              <option value="Formal" {{ 'selected' if settings.speaking_style == 'Formal' }}>Formal (Polished prose, punctuation-perfect)</option>
+              <option value="Serious" {{ 'selected' if settings.speaking_style == 'Serious' }}>Serious (Highly direct, minimal phrasing)</option>
+              <option value="Code" {{ 'selected' if settings.speaking_style == 'Code' }}>Code (Inline code blocks and variables)</option>
             </select>
           </div>
           <input type="hidden" name="theme" id="theme-input" value="{{ theme }}">
-          <button type="submit" class="btn">Save</button>
+          <button type="submit" class="btn">Update Tone</button>
         </form>
       </div>
       {% else %}
-      <div class="card" style="text-align:center;padding:40px">
-        <p style="color:var(--text2);margin-bottom:16px">Sign in to save personal preferences.</p>
-        <a href="/login" class="btn">Login with Google</a>
+      <div class="card" style="text-align:center;padding:48px">
+        <p style="color:var(--text-muted);margin-bottom:20px;font-weight:500">Sign in using Google to customize active settings and tones.</p>
+        <a href="/login" class="btn">Sign In</a>
       </div>
       {% endif %}
-      <div class="card">
-        <div class="card-title">Danger Zone</div>
-        <div class="card-desc">Permanently removes all local dictation data. This cannot be undone.</div>
-        <form action="/clear_history" method="POST" onsubmit="return confirm('Delete all local history permanently?')">
-          <button type="submit" class="btn btn-danger">Wipe All Data</button>
+      
+      <div class="card" style="border-color:rgba(244,63,94,0.2)">
+        <div class="card-title" style="color:var(--danger)">Danger Actions</div>
+        <div class="card-desc">Wipe all application data stored in the local SQLite database.</div>
+        <form action="/clear_history" method="POST" onsubmit="return confirm('Wipe local database details completely?')">
+          <button type="submit" class="btn btn-danger">Erase Local Database</button>
         </form>
       </div>
     </div>
@@ -590,8 +1011,9 @@ function toggleTheme() {
   const next = cur === 'dark' ? 'light' : 'dark';
   html.setAttribute('data-theme', next);
   document.getElementById('theme-icon').textContent = next === 'dark' ? '🌙' : '☀️';
-  document.getElementById('theme-label').textContent = next === 'dark' ? 'Dark Mode' : 'Light Mode';
+  document.getElementById('theme-label').textContent = next === 'dark' ? 'Dark UI' : 'Light UI';
   if (document.getElementById('theme-input')) document.getElementById('theme-input').value = next;
+  
   fetch('/api/set_theme', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
