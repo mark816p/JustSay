@@ -24,10 +24,9 @@ class JustSayApp:
     def __init__(self):
         database.init_db()
         self.recorder = AudioRecorder()
-        self.transcriber = Transcriber(model_size="tiny")
+        self.transcriber = Transcriber(model_size="base") # Upgraded to base for better formatting
         self.is_recording = False
         
-        # Multiprocessing for the PyQt widget to avoid thread issues with pystray or hotkeys
         self.cmd_queue = multiprocessing.Queue()
         
         self.widget_process = multiprocessing.Process(target=run_widget_app, args=(self.cmd_queue,), daemon=True)
@@ -86,6 +85,7 @@ class JustSayApp:
         threading.Thread(target=self.process_audio, daemon=True).start()
 
     def process_audio(self):
+        import datetime
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         audio_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "history_audio"))
         os.makedirs(audio_dir, exist_ok=True)
@@ -93,16 +93,30 @@ class JustSayApp:
         
         audio_file = self.recorder.stop_recording(audio_file_path)
         if audio_file:
-            prompt = database.get_active_prompt()
+            # Build the mega prompt based on style, active prompt, and dictionary
+            # For a local-only setup, we get user style from the default user
+            settings = database.get_user_settings("localuser@localhost")
+            style = settings["speaking_style"] if settings else "Casual"
+            
+            dictionary_words = database.get_dictionary()
+            dict_str = ", ".join(dictionary_words)
+            
+            user_prompt = database.get_active_prompt()
+            
+            # initial_prompt max tokens is 224 for whisper. Keep it concise.
+            prompt = f"Style: {style}. {user_prompt} Keywords: {dict_str}"
+            
             text = self.transcriber.transcribe(audio_file, initial_prompt=prompt)
             if text:
                 database.save_history(audio_file, text)
                 pyperclip.copy(text + " ")
                 time.sleep(0.1)
                 keyboard.send("ctrl+v")
+                
+                # Signal the widget to show the Undo popup
+                self.cmd_queue.put("PASTED")
 
 if __name__ == "__main__":
-    import datetime # Need it here since it's used in process_audio
     multiprocessing.freeze_support()
     app = JustSayApp()
     app.start()
