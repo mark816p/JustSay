@@ -13,7 +13,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             audio_path TEXT,
-            transcript TEXT
+            transcript TEXT,
+            word_count INTEGER DEFAULT 0
         )
     ''')
     # Create Prompts table
@@ -24,6 +25,23 @@ def init_db():
             is_active INTEGER DEFAULT 0
         )
     ''')
+    # Create Users table (for Google Login & Settings)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            email TEXT PRIMARY KEY,
+            name TEXT,
+            speaking_style TEXT DEFAULT 'Casual',
+            theme TEXT DEFAULT 'Dark'
+        )
+    ''')
+    # Create Dictionary table (for Auto-dictionary)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS dictionary (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            word TEXT UNIQUE
+        )
+    ''')
+    
     # Insert default prompt if table is empty
     c.execute("SELECT COUNT(*) FROM prompts")
     if c.fetchone()[0] == 0:
@@ -32,21 +50,41 @@ def init_db():
     conn.commit()
     conn.close()
 
+# --- History ---
 def save_history(audio_path, transcript):
+    word_count = len(transcript.split())
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO history (audio_path, transcript) VALUES (?, ?)", (audio_path, transcript))
+    c.execute("INSERT INTO history (audio_path, transcript, word_count) VALUES (?, ?, ?)", (audio_path, transcript, word_count))
     conn.commit()
     conn.close()
 
 def get_history():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id, timestamp, audio_path, transcript FROM history ORDER BY timestamp DESC")
+    c.execute("SELECT id, timestamp, audio_path, transcript, word_count FROM history ORDER BY timestamp DESC")
     rows = c.fetchall()
     conn.close()
-    return [{"id": r[0], "timestamp": r[1], "audio_path": r[2], "transcript": r[3]} for r in rows]
+    return [{"id": r[0], "timestamp": r[1], "audio_path": r[2], "transcript": r[3], "word_count": r[4]} for r in rows]
 
+def clear_history():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM history")
+    conn.commit()
+    conn.close()
+
+def get_statistics():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*), SUM(word_count) FROM history")
+    row = c.fetchone()
+    conn.close()
+    total_dictations = row[0] if row and row[0] else 0
+    total_words = row[1] if row and row[1] else 0
+    return {"total_dictations": total_dictations, "total_words": total_words}
+
+# --- Prompts ---
 def get_active_prompt():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -84,3 +122,44 @@ def delete_prompt(prompt_id):
     c.execute("DELETE FROM prompts WHERE id=?", (prompt_id,))
     conn.commit()
     conn.close()
+
+# --- Users & Settings ---
+def save_user(email, name):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR IGNORE INTO users (email, name) VALUES (?, ?)", (email, name))
+    conn.commit()
+    conn.close()
+
+def get_user_settings(email):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT speaking_style, theme FROM users WHERE email=?", (email,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return {"speaking_style": row[0], "theme": row[1]}
+    return None
+
+def update_user_settings(email, speaking_style, theme):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE users SET speaking_style=?, theme=? WHERE email=?", (speaking_style, theme, email))
+    conn.commit()
+    conn.close()
+
+# --- Dictionary ---
+def add_to_dictionary(word):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR IGNORE INTO dictionary (word) VALUES (?)", (word,))
+    conn.commit()
+    conn.close()
+
+def get_dictionary():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT word FROM dictionary")
+    rows = c.fetchall()
+    conn.close()
+    return [r[0] for r in rows]
