@@ -1,8 +1,11 @@
 import sys
 import random
-from PyQt6.QtWidgets import QApplication, QWidget
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QInputDialog, QMessageBox
 from PyQt6.QtCore import Qt, QTimer, QRectF
-from PyQt6.QtGui import QPainter, QColor, QPen, QPainterPath
+from PyQt6.QtGui import QPainter, QColor, QPen
+import keyboard
+import threading
+import database
 
 class WisprWidget(QWidget):
     def __init__(self):
@@ -14,18 +17,33 @@ class WisprWidget(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
-        self.width_val = 200
+        self.width_val = 300
         self.height_val = 60
         self.resize(self.width_val, self.height_val)
         
         # Position at the bottom center of the primary screen
-        # Usually taskbar is 40-50px. Let's place it 80px from bottom.
         screen = QApplication.primaryScreen().geometry()
         x = (screen.width() - self.width_val) // 2
         y = screen.height() - self.height_val - 120
         self.move(x, y)
         
         self.is_recording = False
+        
+        self.undo_btn = QPushButton("Undo & Correct", self)
+        self.undo_btn.setGeometry(50, 15, 200, 30)
+        self.undo_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #cf6679;
+                color: white;
+                border-radius: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #ff8a9f;
+            }
+        """)
+        self.undo_btn.clicked.connect(self.undo_action)
+        self.undo_btn.hide()
         
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
@@ -51,14 +69,36 @@ class WisprWidget(QWidget):
             start_x = (self.width_val - (num_bars * bar_spacing)) / 2 + (bar_spacing/2)
             
             for i in range(num_bars):
-                # Random height for waveform effect
                 h = random.randint(10, 40)
                 painter.drawLine(int(start_x + i * bar_spacing), int(center_y - h/2),
                                  int(start_x + i * bar_spacing), int(center_y + h/2))
-        else:
+        elif not self.undo_btn.isVisible():
             # Draw idle indicator
             painter.setBrush(QColor(100, 100, 100))
             painter.drawEllipse(int(self.width_val/2 - 6), int(self.height_val/2 - 6), 12, 12)
+
+    def undo_action(self):
+        # 1. Send Ctrl+Z to undo the paste
+        keyboard.send("ctrl+z")
+        self.undo_btn.hide()
+        
+        # 2. Ask user for correct spelling
+        text, ok = QInputDialog.getText(self, 'Dictionary', 'Enter correct word/phrase to learn:')
+        if ok and text:
+            database.add_to_dictionary(text)
+            # Show a brief notification
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Learned")
+            msg.setText(f"Added '{text}' to dictionary!")
+            msg.setStyleSheet("background-color: #333; color: white;")
+            QTimer.singleShot(2000, msg.close)
+            msg.show()
+
+    def show_undo_btn(self):
+        self.undo_btn.show()
+        # Hide it after 4 seconds
+        QTimer.singleShot(4000, self.undo_btn.hide)
+
 
 def run_widget_app(command_queue):
     app = QApplication(sys.argv)
@@ -69,9 +109,12 @@ def run_widget_app(command_queue):
             cmd = command_queue.get()
             if cmd == "START":
                 widget.is_recording = True
+                widget.undo_btn.hide()
                 widget.show()
             elif cmd == "STOP":
                 widget.is_recording = False
+            elif cmd == "PASTED":
+                widget.show_undo_btn()
             elif cmd == "SHOW":
                 widget.show()
             elif cmd == "HIDE":
