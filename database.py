@@ -39,7 +39,8 @@ def init_db():
             speaking_style TEXT DEFAULT 'Casual',
             theme TEXT DEFAULT 'Dark',
             hotkey_ptt TEXT DEFAULT 'ctrl+windows',
-            hotkey_toggle TEXT DEFAULT 'ctrl+windows+space'
+            hotkey_toggle TEXT DEFAULT 'ctrl+windows+space',
+            show_ui INTEGER DEFAULT 1
         )
     ''')
     try:
@@ -50,17 +51,20 @@ def init_db():
         c.execute("ALTER TABLE users ADD COLUMN hotkey_toggle TEXT DEFAULT 'ctrl+windows+space'")
     except sqlite3.OperationalError:
         pass
-
     try:
         c.execute("ALTER TABLE users ADD COLUMN onboarded INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN show_ui INTEGER DEFAULT 1")
     except sqlite3.OperationalError:
         pass
 
     # Insert default local user if not present
     c.execute("SELECT COUNT(*) FROM users WHERE email='localuser@localhost'")
     if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO users (email, name, speaking_style, theme, hotkey_ptt, hotkey_toggle, onboarded) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                  ("localuser@localhost", "Guest User", "Casual", "Dark", "ctrl+windows", "ctrl+windows+space", 0))
+        c.execute("INSERT INTO users (email, name, speaking_style, theme, hotkey_ptt, hotkey_toggle, onboarded, show_ui) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                  ("localuser@localhost", "Guest User", "Casual", "Dark", "ctrl+windows", "ctrl+windows+space", 0, 1))
 
     # Create Dictionary table (for Auto-dictionary)
     c.execute('''
@@ -162,7 +166,7 @@ def save_user(email, name):
 def get_user_settings(email):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT speaking_style, theme, hotkey_ptt, hotkey_toggle, onboarded FROM users WHERE email=?", (email,))
+    c.execute("SELECT speaking_style, theme, hotkey_ptt, hotkey_toggle, onboarded, show_ui FROM users WHERE email=?", (email,))
     row = c.fetchone()
     conn.close()
     if row:
@@ -171,15 +175,16 @@ def get_user_settings(email):
             "theme": row[1],
             "hotkey_ptt": row[2] or "ctrl+windows",
             "hotkey_toggle": row[3] or "ctrl+windows+space",
-            "onboarded": bool(row[4])
+            "onboarded": bool(row[4]),
+            "show_ui": bool(row[5] if row[5] is not None else 1)
         }
     return None
 
-def update_user_settings(email, speaking_style, theme, hotkey_ptt="ctrl+windows", hotkey_toggle="ctrl+windows+space", onboarded=1):
+def update_user_settings(email, speaking_style, theme, hotkey_ptt="ctrl+windows", hotkey_toggle="ctrl+windows+space", onboarded=1, show_ui=1):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("UPDATE users SET speaking_style=?, theme=?, hotkey_ptt=?, hotkey_toggle=?, onboarded=? WHERE email=?", 
-              (speaking_style, theme, hotkey_ptt, hotkey_toggle, int(onboarded), email))
+    c.execute("UPDATE users SET speaking_style=?, theme=?, hotkey_ptt=?, hotkey_toggle=?, onboarded=?, show_ui=? WHERE email=?", 
+              (speaking_style, theme, hotkey_ptt, hotkey_toggle, int(onboarded), int(show_ui), email))
     conn.commit()
     conn.close()
 

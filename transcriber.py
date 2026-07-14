@@ -14,6 +14,18 @@ class Transcriber:
             return ""
         
         # Transcribe audio using initial_prompt for context
-        segments, info = self.model.transcribe(audio_path, beam_size=5, initial_prompt=initial_prompt if initial_prompt else None)
-        text = "".join([segment.text for segment in segments])
-        return text.strip()
+        segments, info = self.model.transcribe(
+            audio_path, 
+            beam_size=5, 
+            initial_prompt=initial_prompt if initial_prompt else None,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500)
+        )
+        text = "".join([segment.text for segment in segments]).strip()
+        
+        # Filter out common hallucination phrases caused by silence
+        hallucination_phrases = ["Transcribe accurately", "Key terms.", "maintaining proper capitalization"]
+        if any(phrase in text for phrase in hallucination_phrases) and len(text) < 300:
+            return ""
+            
+        return text

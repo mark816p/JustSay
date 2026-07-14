@@ -18,19 +18,21 @@ class JustSayWidget(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         self.width_val = 300
-        self.height_val = 60
+        self.height_val = 40
         self.resize(self.width_val, self.height_val)
         
         # Position at the bottom center of the primary screen
         screen = QApplication.primaryScreen().geometry()
         x = (screen.width() - self.width_val) // 2
-        y = screen.height() - self.height_val - 120
+        y = screen.height() - self.height_val - 20
         self.move(x, y)
+        
+        self.show_ui = True
         
         self.is_recording = False
         
         self.undo_btn = QPushButton("Add Custom Word?", self)
-        self.undo_btn.setGeometry(50, 15, 200, 30)
+        self.undo_btn.setGeometry(50, 0, 200, 30)
         self.undo_btn.setStyleSheet("""
             QPushButton {
                 background-color: #4b5563;
@@ -52,32 +54,27 @@ class JustSayWidget(QWidget):
         self.timer.start(50) # 20 fps
         
     def paintEvent(self, event):
+        if not self.show_ui:
+            return
+            
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Draw pill background
-        painter.setBrush(QColor(30, 30, 30, 225))
-        painter.setPen(Qt.PenStyle.NoPen)
-        rect = QRectF(0, 0, self.width_val, self.height_val)
-        painter.drawRoundedRect(rect, self.height_val/2, self.height_val/2)
+        line_w = 150
+        line_h = 3
+        start_x = (self.width_val - line_w) / 2
+        start_y = self.height_val - line_h
         
         if self.is_recording:
-            # Draw waveform (monochromatic grey)
-            painter.setPen(QPen(QColor(150, 150, 150), 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+            # Subtle red line when recording
+            painter.setBrush(QColor(255, 50, 50, 225))
+        else:
+            # Subtle black line when idle
+            painter.setBrush(QColor(0, 0, 0, 200))
             
-            center_y = self.height_val / 2
-            num_bars = 10
-            bar_spacing = 15
-            start_x = (self.width_val - (num_bars * bar_spacing)) / 2 + (bar_spacing/2)
-            
-            for i in range(num_bars):
-                h = random.randint(10, 40)
-                painter.drawLine(int(start_x + i * bar_spacing), int(center_y - h/2),
-                                 int(start_x + i * bar_spacing), int(center_y + h/2))
-        elif not self.undo_btn.isVisible():
-            # Draw idle indicator
-            painter.setBrush(QColor(100, 100, 100))
-            painter.drawEllipse(int(self.width_val/2 - 6), int(self.height_val/2 - 6), 12, 12)
+        painter.setPen(Qt.PenStyle.NoPen)
+        rect = QRectF(start_x, start_y, line_w, line_h)
+        painter.drawRoundedRect(rect, 1.5, 1.5)
 
     def add_word_action(self):
         self.undo_btn.hide()
@@ -104,27 +101,44 @@ def run_widget_app(command_queue):
     app = QApplication(sys.argv)
     widget = JustSayWidget()
     
+    db_check_counter = 0
     def check_queue():
+        nonlocal db_check_counter
         while not command_queue.empty():
             cmd = command_queue.get()
             if cmd == "START":
                 widget.is_recording = True
                 widget.undo_btn.hide()
-                widget.show()
             elif cmd == "STOP":
                 widget.is_recording = False
             elif cmd == "PASTED":
-                widget.show_undo_btn()
+                if widget.show_ui: widget.show_undo_btn()
             elif cmd == "SHOW":
                 widget.show()
             elif cmd == "HIDE":
                 widget.hide()
             elif cmd == "QUIT":
                 app.quit()
+        
+        db_check_counter += 1
+        if db_check_counter >= 10:
+            db_check_counter = 0
+            settings = database.get_user_settings("localuser@localhost")
+            if settings:
+                widget.show_ui = settings.get("show_ui", True)
+                if not widget.show_ui and widget.isVisible():
+                    widget.hide()
+                elif widget.show_ui and not widget.isVisible():
+                    widget.show()
     
     timer = QTimer()
     timer.timeout.connect(check_queue)
     timer.start(100)
     
-    widget.show()
+    # Check settings initially
+    settings = database.get_user_settings("localuser@localhost")
+    if settings and not settings.get("show_ui", True):
+        widget.hide()
+    else:
+        widget.show()
     sys.exit(app.exec())

@@ -155,10 +155,28 @@ class JustSayApp:
 
     def quit_app(self, icon, item):
         self.cmd_queue.put("QUIT")
+        if self.widget_process.is_alive():
+            self.widget_process.terminate()
+        if self.server_process.is_alive():
+            self.server_process.terminate()
         self.icon.stop()
-        os._exit(0)
+        import sys
+        sys.exit(0)
+
+import socket
+import sys
+
+def enforce_single_instance():
+    try:
+        global _lock_socket
+        _lock_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        _lock_socket.bind(("127.0.0.1", 49191))
+    except OSError:
+        print("Another instance of JustSay is already running. Exiting.")
+        sys.exit(0)
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
+    enforce_single_instance()
     app = JustSayApp()
     app.start()
