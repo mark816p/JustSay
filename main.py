@@ -151,7 +151,10 @@ class JustSayApp:
         self.icon.run()
 
     def open_dashboard(self, icon, item):
-        webbrowser.open("http://localhost:2000")
+        import multiprocessing
+        from webview_app import run_webview_app
+        p = multiprocessing.Process(target=run_webview_app, daemon=True)
+        p.start()
 
     def quit_app(self, icon, item):
         self.cmd_queue.put("QUIT")
