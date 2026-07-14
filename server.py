@@ -1042,7 +1042,7 @@ def delete_from_dict(word):
 @app.route("/clear_history", methods=["POST"])
 def clear_history():
     database.clear_history()
-    audio_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "history_audio"))
+    audio_dir = database.AUDIO_DIR
     if os.path.exists(audio_dir):
         for f in os.listdir(audio_dir):
             try: os.remove(os.path.join(audio_dir, f))
@@ -1067,12 +1067,12 @@ def delete_prompt(pid):
 
 @app.route("/audio/<filename>")
 def get_audio(filename):
-    audio_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "history_audio"))
+    audio_dir = database.AUDIO_DIR
     return send_file(os.path.join(audio_dir, filename))
 
 def run_server():
     database.init_db()
-    os.makedirs(os.path.abspath(os.path.join(os.path.dirname(__file__), "history_audio")), exist_ok=True)
+    pass
     app.run(host="127.0.0.1", port=2000, debug=False, use_reloader=False)
 
 if __name__ == "__main__":

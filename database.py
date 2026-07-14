@@ -2,8 +2,14 @@ import sqlite3
 import os
 import datetime
 
-DB_PATH = "justsay_data.db"
+APP_NAME = "JustSay"
+APPDATA_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), APP_NAME)
+os.makedirs(APPDATA_DIR, exist_ok=True)
 
+DB_PATH = os.path.join(APPDATA_DIR, "justsay_data.db")
+AUDIO_DIR = os.path.join(APPDATA_DIR, "history_audio")
+os.makedirs(AUDIO_DIR, exist_ok=True)
+TEMP_AUDIO = os.path.join(APPDATA_DIR, "temp_recording.wav")
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()

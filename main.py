@@ -118,8 +118,7 @@ class JustSayApp:
 
     def process_audio(self):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        audio_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "history_audio"))
-        os.makedirs(audio_dir, exist_ok=True)
+        audio_dir = database.AUDIO_DIR
         audio_file_path = os.path.join(audio_dir, f"dictation_{timestamp}.wav")
 
         audio_file = self.recorder.stop_recording(audio_file_path)
