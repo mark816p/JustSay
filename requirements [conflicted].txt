@@ -1,0 +1,11 @@
+customtkinter
+faster-whisper
+keyboard
+pyautogui
+pyaudio
+soundfile
+numpy
+pyperclip
+pystray
+Pillow
+pyinstaller

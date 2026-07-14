@@ -1,0 +1,11 @@
+flask
+authlib
+requests
+faster-whisper
+pyaudio
+keyboard
+pyperclip
+pillow
+pystray
+PyQt6
+pyinstaller
