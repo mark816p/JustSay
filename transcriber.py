@@ -18,14 +18,19 @@ class Transcriber:
             audio_path, 
             beam_size=5, 
             initial_prompt=initial_prompt if initial_prompt else None,
+            condition_on_previous_text=False,
             vad_filter=True,
             vad_parameters=dict(min_silence_duration_ms=500)
         )
         text = "".join([segment.text for segment in segments]).strip()
         
-        # Filter out common hallucination phrases caused by silence
-        hallucination_phrases = ["Transcribe accurately", "Key terms.", "maintaining proper capitalization"]
-        if any(phrase in text for phrase in hallucination_phrases) and len(text) < 300:
+        # Aggressive filter for hallucinations when there is mostly silence
+        text_lower = text.lower()
+        if "transcribe accurately" in text_lower or "maintaining proper capitalization" in text_lower or "key terms." in text_lower:
+            return ""
+        
+        # If the output just regurgitates the initial prompt or is too short
+        if initial_prompt and text_lower in initial_prompt.lower():
             return ""
             
         return text

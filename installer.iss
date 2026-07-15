@@ -17,16 +17,16 @@ WizardStyle=modern
 UninstallDisplayIcon={app}\JustSay.exe
 
 [Files]
-Source: "dist\JustSay.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "*"; DestDir: "{app}"; Excludes: "dist,build,__pycache__,.git,history_audio,*.iss"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\JustSay"; Filename: "{app}\JustSay.exe"
-Name: "{autodesktop}\JustSay"; Filename: "{app}\JustSay.exe"; Tasks: desktopicon
-Name: "{userstartup}\JustSay"; Filename: "{app}\JustSay.exe"; Tasks: startup
+Name: "{group}\JustSay"; Filename: "wscript.exe"; Parameters: """{app}\JustSay.vbs"""
+Name: "{autodesktop}\JustSay"; Filename: "wscript.exe"; Parameters: """{app}\JustSay.vbs"""
+Name: "{userstartup}\JustSay"; Filename: "wscript.exe"; Parameters: """{app}\JustSay.vbs"""
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "startup"; Description: "Run JustSay automatically when Windows starts"; GroupDescription: "Startup"; Flags: checked
 
 [Run]
-Filename: "{app}\JustSay.exe"; Description: "Launch JustSay now"; Flags: nowait postinstall skipifsilent
+Filename: "wscript.exe"; Parameters: """{app}\JustSay.vbs"""; Description: "Launch JustSay"; Flags: nowait postinstall skipifsilent
