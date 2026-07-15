@@ -51,7 +51,6 @@ HTML = r"""<!DOCTYPE html>
 
 [data-theme=dark] {
   --bg: #000000;
-  --bg-gradient: radial-gradient(circle at 10% 20%, rgb(18, 18, 22) 0%, rgb(0, 0, 0) 90%);
   --surface: rgba(30, 30, 35, 0.65);
   --surface-hover: rgba(50, 50, 55, 0.85);
   --border: rgba(255,255,255,0.08);
@@ -67,7 +66,6 @@ HTML = r"""<!DOCTYPE html>
 
 [data-theme=light] {
   --bg: #f5f5f7;
-  --bg-gradient: radial-gradient(circle at 10% 20%, rgb(250, 250, 255) 0%, rgb(235, 235, 240) 90%);
   --surface: rgba(255, 255, 255, 0.7);
   --surface-hover: rgba(255, 255, 255, 0.95);
   --border: rgba(0,0,0,0.08);
@@ -84,19 +82,31 @@ HTML = r"""<!DOCTYPE html>
 body {
   font-family: var(--font-sans);
   background: var(--bg);
-  background-image: var(--bg-gradient);
   color: var(--text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
+  position: relative;
+}
+
+/* Animated Gradient Mesh Background */
+.bg-mesh {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  z-index: -1;
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(41, 151, 255, 0.15), transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(255, 59, 48, 0.1), transparent 40%);
+  filter: blur(60px);
+  animation: meshAnim 20s infinite alternate;
+}
+@keyframes meshAnim {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
 }
 
 /* APP LAYOUT */
-.app-container {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-}
+.app-container { display: flex; height: 100vh; width: 100vw; }
 
 /* SIDEBAR */
 .sidebar {
@@ -118,23 +128,8 @@ body {
   margin-bottom: 50px;
   padding: 0 10px;
 }
-
-.brand-icon {
-  width: 44px;
-  height: 44px;
-  background: var(--text);
-  color: var(--bg);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.brand-text {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
+.brand-icon { width: 44px; height: 44px; background: var(--text); color: var(--bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.brand-text { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
 
 .nav-item {
   padding: 14px 18px;
@@ -150,12 +145,10 @@ body {
   gap: 12px;
   user-select: none;
 }
-
 .nav-item svg { width: 20px; height: 20px; opacity: 0.8; }
 .nav-item:hover { background: var(--surface-hover); color: var(--text); }
 .nav-item.active { background: var(--text); color: var(--bg); box-shadow: var(--shadow); }
 .nav-item.active svg { opacity: 1; }
-
 .sidebar-bottom { margin-top: auto; }
 
 /* MAIN CONTENT */
@@ -163,30 +156,13 @@ body {
   flex: 1;
   padding: 60px 80px;
   overflow-y: auto;
+  scroll-behavior: smooth;
 }
-
-.header-title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  letter-spacing: -1.5px;
-  margin-bottom: 8px;
-}
-
-.header-sub {
-  font-size: 1.2rem;
-  color: var(--text-muted);
-  margin-bottom: 40px;
-  font-weight: 500;
-}
+.header-title { font-size: 3.5rem; font-weight: 700; letter-spacing: -1.5px; margin-bottom: 8px; }
+.header-sub { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 40px; font-weight: 500; }
 
 /* CARDS */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
-}
-
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 40px; }
 .card {
   background: var(--surface);
   backdrop-filter: blur(20px);
@@ -198,35 +174,10 @@ body {
   position: relative;
   overflow: hidden;
 }
-
-.card:hover {
-  transform: translateY(-4px) scale(1.01);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow);
-}
-
-.card-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-muted);
-  margin-bottom: 16px;
-}
-
-.card-value {
-  font-size: 3.5rem;
-  font-weight: 700;
-  letter-spacing: -1px;
-  line-height: 1.1;
-  margin-bottom: 8px;
-}
-
-.card-desc {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
+.card:hover { transform: translateY(-4px) scale(1.01); border-color: var(--border-strong); box-shadow: var(--shadow); }
+.card-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 16px; }
+.card-value { font-size: 3.5rem; font-weight: 700; letter-spacing: -1px; line-height: 1.1; margin-bottom: 8px; }
+.card-desc { font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
 
 /* FORMS & BUTTONS */
 .btn {
@@ -247,6 +198,8 @@ body {
 .btn:hover { background: var(--accent-hover); transform: scale(1.03); }
 .btn-danger { background: var(--danger); }
 .btn-danger:hover { background: #d32f2f; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { background: var(--surface-hover); }
 
 input, select {
   background: var(--input-bg);
@@ -266,9 +219,12 @@ input:focus, select:focus { border-color: var(--accent); background: var(--surfa
 .form-row { display: flex; gap: 12px; align-items: center; }
 
 /* SECTIONS */
-.section { display: none; opacity: 0; animation: fade 0.4s forwards; }
+.section { display: none; opacity: 0; animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .section.active { display: block; }
-@keyframes fade { to { opacity: 1; } }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* TABLES */
 .table-wrap { overflow-x: auto; margin-top: 10px; }
@@ -279,7 +235,7 @@ tr:last-child td { border-bottom: none; }
 tr { transition: var(--trans); }
 tr:hover td { background: var(--surface-hover); }
 
-/* TAGS */
+/* TAGS & SHORTCUTS */
 .tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .tag {
   background: var(--input-bg);
@@ -301,22 +257,179 @@ tr:hover td { background: var(--surface-hover); }
   border-radius: var(--r-lg);
   margin-bottom: 16px;
 }
+.shortcut-keys { display: inline-flex; gap: 6px; }
 .shortcut-keys kbd {
   background: var(--text);
   color: var(--bg);
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 700;
-  margin-right: 6px;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  display: inline-block;
+  text-transform: uppercase;
+}
+
+/* ONBOARDING FLOW */
+.onboard-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+}
+.onboard-card {
+  background: var(--surface);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-xl);
+  padding: 50px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: var(--shadow);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.onboard-step { display: none; opacity: 0; animation: fadeUp 0.5s forwards; }
+.onboard-step.active { display: block; }
+.onboard-icon { margin: 0 auto 30px; width: 64px; height: 64px; background: var(--text); color: var(--bg); border-radius: 20px; display: flex; align-items: center; justify-content: center; }
+
+/* STYLE PICKER CARDS */
+.style-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 30px 0;
+  text-align: left;
+}
+.style-card {
+  border: 2px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  cursor: pointer;
+  transition: var(--trans);
+  background: var(--input-bg);
+}
+.style-card:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+.style-card.selected { border-color: var(--accent); background: rgba(41, 151, 255, 0.1); box-shadow: 0 0 0 2px rgba(41, 151, 255, 0.3); }
+.style-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+.style-desc { font-size: 0.9rem; color: var(--text-muted); }
+
+/* RECORDING INDICATOR */
+.recording-active {
+  background: var(--danger) !important;
+  color: white !important;
+  animation: pulseRed 1.5s infinite;
+}
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 0 0 rgba(255,59,48, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255,59,48, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,59,48, 0); }
 }
 </style>
 </head>
 <body>
+<div class="bg-mesh"></div>
 
+{% if not settings.onboarded %}
+<!-- ONBOARDING FLOW -->
+<div class="onboard-container">
+  <div class="onboard-card">
+    <form id="onboard-form" action="/complete_onboarding" method="POST">
+      
+      <!-- STEP 1: Welcome -->
+      <div class="onboard-step active" id="step-1">
+        <div class="onboard-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:32px;height:32px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/></svg>
+        </div>
+        <h1 class="header-title" style="font-size:2.5rem;margin-bottom:12px;">Welcome to JustSay</h1>
+        <p class="header-sub">Your intelligent, fully-local voice OS. Let's get your triggers and preferences set up.</p>
+        <button type="button" class="btn" style="width:100%;margin-top:20px;font-size:1.1rem;padding:16px;" onclick="nextStep(2)">Get Started</button>
+      </div>
+
+      <!-- STEP 2: Shortcuts -->
+      <div class="onboard-step" id="step-2">
+        <h1 class="header-title" style="font-size:2rem;margin-bottom:12px;">Configure Triggers</h1>
+        <p class="header-sub" style="margin-bottom:30px;">How do you want to activate dictation globally?</p>
+        
+        <div class="form-group" style="text-align:left;">
+          <label class="form-label">Push-to-Talk (Hold)</label>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <input type="hidden" name="hotkey_ptt" id="ob_ptt_input" value="ctrl+windows">
+            <div id="ob_ptt_input_display" class="shortcut-keys" style="flex:1;"><kbd>CTRL</kbd><kbd>WINDOWS</kbd></div>
+            <button type="button" class="btn btn-outline" onclick="startRecording(this, 'ob_ptt_input')">Record Hotkey</button>
+          </div>
+        </div>
+
+        <div class="form-group" style="text-align:left;margin-top:30px;">
+          <label class="form-label">Toggle Recording (Tap)</label>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <input type="hidden" name="hotkey_toggle" id="ob_toggle_input" value="ctrl+windows+space">
+            <div id="ob_toggle_input_display" class="shortcut-keys" style="flex:1;"><kbd>CTRL</kbd><kbd>WINDOWS</kbd><kbd>SPACE</kbd></div>
+            <button type="button" class="btn btn-outline" onclick="startRecording(this, 'ob_toggle_input')">Record Hotkey</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;margin-top:40px;">
+          <button type="button" class="btn btn-outline" style="flex:1;padding:16px;" onclick="nextStep(1)">Back</button>
+          <button type="button" class="btn" style="flex:1;padding:16px;" onclick="nextStep(3)">Continue</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Style -->
+      <div class="onboard-step" id="step-3">
+        <h1 class="header-title" style="font-size:2rem;margin-bottom:12px;">Formatting Tone</h1>
+        <p class="header-sub" style="margin-bottom:20px;">How should the AI naturally format your speech?</p>
+        
+        <input type="hidden" name="speaking_style" id="ob_style_input" value="Casual">
+        <div class="style-picker">
+          <div class="style-card selected" onclick="selectStyle(this, 'Casual')">
+            <div class="style-title">Casual</div>
+            <div class="style-desc">Natural punctuation, conversational tone. Best for messaging.</div>
+          </div>
+          <div class="style-card" onclick="selectStyle(this, 'Formal')">
+            <div class="style-title">Formal</div>
+            <div class="style-desc">Strict grammar, properly capitalized sentences. Best for emails.</div>
+          </div>
+          <div class="style-card" onclick="selectStyle(this, 'Code')">
+            <div class="style-title">Code</div>
+            <div class="style-desc">Formats symbols, camelCase, and syntax natively.</div>
+          </div>
+          <div class="style-card" onclick="selectStyle(this, 'Serious')">
+            <div class="style-title">Serious</div>
+            <div class="style-desc">Concise, direct, highly professional tone without filler words.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;margin-top:20px;">
+          <button type="button" class="btn btn-outline" style="flex:1;padding:16px;" onclick="nextStep(2)">Back</button>
+          <button type="submit" class="btn" style="flex:1;padding:16px;">Complete Setup</button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+function nextStep(step) {
+  document.querySelectorAll('.onboard-step').forEach(el => el.classList.remove('active'));
+  document.getElementById('step-' + step).classList.add('active');
+}
+
+function selectStyle(el, val) {
+  document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('ob_style_input').value = val;
+}
+</script>
+
+{% else %}
+
+<!-- SIDEBAR LAYOUT -->
 <div class="app-container">
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-icon">
@@ -385,12 +498,12 @@ tr:hover td { background: var(--surface-hover); }
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:10px">
           <div class="shortcut-box">
             <div class="shortcut-keys">{% for k in settings.hotkey_ptt.split('+') %}<kbd>{{ k.upper() }}</kbd>{% endfor %}</div>
-            <div style="font-weight:700;margin:10px 0 4px">Push-to-Talk (Hold)</div>
+            <div style="font-weight:700;margin:10px 0 4px;font-size:1.1rem">Push-to-Talk (Hold)</div>
             <div class="card-desc">Hold to record, release to transcribe.</div>
           </div>
           <div class="shortcut-box">
             <div class="shortcut-keys">{% for k in settings.hotkey_toggle.split('+') %}<kbd>{{ k.upper() }}</kbd>{% endfor %}</div>
-            <div style="font-weight:700;margin:10px 0 4px">Toggle Recording (Tap)</div>
+            <div style="font-weight:700;margin:10px 0 4px;font-size:1.1rem">Toggle Recording (Tap)</div>
             <div class="card-desc">Tap once to begin, tap again to paste.</div>
           </div>
         </div>
@@ -402,7 +515,7 @@ tr:hover td { background: var(--surface-hover); }
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <h1 class="header-title">Transcripts</h1>
-          <p class="header-sub">On-device transcripts and audio logs.</p>
+          <p class="header-sub">On-device transcripts history. Audio is discarded automatically.</p>
         </div>
         <form action="/clear_history" method="POST" onsubmit="return confirm('Wipe all local recordings permanently?')">
           <button type="submit" class="btn btn-danger">Clear Logs</button>
@@ -412,17 +525,16 @@ tr:hover td { background: var(--surface-hover); }
       <div class="card" style="padding:0">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Timestamp</th><th>Transcript</th><th>Words</th><th>Audio Wave</th></tr></thead>
+            <thead><tr><th>Timestamp</th><th>Transcript</th><th>Words</th></tr></thead>
             <tbody>
             {% for h in history %}
             <tr>
               <td style="color:var(--text-muted);white-space:nowrap">{{ h.timestamp }}</td>
-              <td style="max-width:400px;line-height:1.5">{{ h.transcript }}</td>
-              <td>{{ h.word_count }}</td>
-              <td><audio controls style="height:32px"><source src="/audio/{{ h.audio_filename }}" type="audio/wav"></audio></td>
+              <td style="max-width:500px;line-height:1.6">{{ h.transcript }}</td>
+              <td><span class="tag" style="display:inline-flex;padding:4px 10px;font-size:0.8rem">{{ h.word_count }}</span></td>
             </tr>
             {% else %}
-            <tr><td colspan="4" style="text-align:center;padding:60px;color:var(--text-muted);">No local recordings found.</td></tr>
+            <tr><td colspan="3" style="text-align:center;padding:80px;color:var(--text-muted);">No local recordings found.</td></tr>
             {% endfor %}
             </tbody>
           </table>
@@ -462,7 +574,7 @@ tr:hover td { background: var(--surface-hover); }
       
       <div class="card" style="margin-bottom:24px">
         <form action="/add_prompt" method="POST" class="form-row">
-          <input type="text" name="prompt_text" placeholder="e.g. Capitalize acronyms. Use bullet points." required style="max-width:500px">
+          <input type="text" name="prompt_text" placeholder="e.g. Capitalize acronyms. Use bullet points." required style="flex:1">
           <button type="submit" class="btn">Add Rule</button>
         </form>
       </div>
@@ -478,7 +590,7 @@ tr:hover td { background: var(--surface-hover); }
                 {% if p.is_active %}<span style="color:var(--accent);font-weight:700">Active</span>
                 {% else %}<a href="/set_active/{{ p.id }}" style="color:var(--text);font-weight:600">Activate</a>{% endif %}
               </td>
-              <td>{{ p.prompt_text }}</td>
+              <td style="font-weight:500">{{ p.prompt_text }}</td>
               <td style="text-align:right"><a href="/delete_prompt/{{ p.id }}" style="color:var(--danger);font-weight:600;text-decoration:none">Remove</a></td>
             </tr>
             {% else %}
@@ -506,21 +618,36 @@ tr:hover td { background: var(--surface-hover); }
               <option value="Code" {{ 'selected' if settings.speaking_style == 'Code' }}>Code (inserts syntax characters)</option>
             </select>
           </div>
-          <div class="form-group">
+          
+          <div class="form-group" style="max-width:400px">
             <label class="form-label">Push-to-Talk Hotkey</label>
-            <input type="text" name="hotkey_ptt" value="{{ settings.hotkey_ptt }}" required style="max-width:400px">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <input type="hidden" name="hotkey_ptt" id="settings_ptt_input" value="{{ settings.hotkey_ptt }}">
+              <div id="settings_ptt_input_display" class="shortcut-keys" style="flex:1;">
+                {% for k in settings.hotkey_ptt.split('+') %}<kbd>{{ k.upper() }}</kbd>{% endfor %}
+              </div>
+              <button type="button" class="btn btn-outline" onclick="startRecording(this, 'settings_ptt_input')">Record</button>
+            </div>
           </div>
-          <div class="form-group">
+          
+          <div class="form-group" style="max-width:400px">
             <label class="form-label">Toggle Recording Hotkey</label>
-            <input type="text" name="hotkey_toggle" value="{{ settings.hotkey_toggle }}" required style="max-width:400px">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <input type="hidden" name="hotkey_toggle" id="settings_toggle_input" value="{{ settings.hotkey_toggle }}">
+              <div id="settings_toggle_input_display" class="shortcut-keys" style="flex:1;">
+                {% for k in settings.hotkey_toggle.split('+') %}<kbd>{{ k.upper() }}</kbd>{% endfor %}
+              </div>
+              <button type="button" class="btn btn-outline" onclick="startRecording(this, 'settings_toggle_input')">Record</button>
+            </div>
           </div>
-          <div class="form-group" style="display:flex;align-items:center;gap:12px">
-            <input type="checkbox" name="show_ui" value="1" id="showUI" {{ 'checked' if settings.get('show_ui', True) else '' }} style="width:auto;transform:scale(1.2)">
+          
+          <div class="form-group" style="display:flex;align-items:center;gap:12px;margin-top:30px">
+            <input type="checkbox" name="show_ui" value="1" id="showUI" {{ 'checked' if settings.get('show_ui', True) else '' }} style="width:20px;height:20px;">
             <label for="showUI" class="form-label" style="margin:0">Show Overlay Widget</label>
           </div>
           
           <input type="hidden" name="theme" id="theme-input" value="{{ theme }}">
-          <button type="submit" class="btn" style="margin-top:10px">Save Preferences</button>
+          <button type="submit" class="btn" style="margin-top:20px;width:200px">Save Preferences</button>
         </form>
       </div>
     </div>
@@ -552,6 +679,60 @@ function toggleTheme() {
   });
 }
 </script>
+{% endif %}
+
+<!-- INTERACTIVE HOTKEY RECORDER SCRIPT -->
+<script>
+let recordingInputInfo = null;
+
+function startRecording(btn, inputId) {
+    if (recordingInputInfo) {
+        stopRecording();
+    }
+    recordingInputInfo = { btn, inputId };
+    btn.textContent = "Listening...";
+    btn.classList.add("recording-active");
+    window.addEventListener('keydown', handleKeydown, {capture: true});
+}
+
+function handleKeydown(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    let keys = [];
+    if (e.ctrlKey) keys.push('ctrl');
+    if (e.metaKey) keys.push('windows');
+    if (e.altKey) keys.push('alt');
+    if (e.shiftKey) keys.push('shift');
+    
+    let key = e.key.toLowerCase();
+    let isModifier = ['control', 'meta', 'alt', 'shift', 'os'].includes(key);
+    
+    if (!isModifier) {
+        if (key === ' ') key = 'space';
+        keys.push(key);
+    }
+    
+    if (keys.length > 0) {
+        const combo = keys.join('+');
+        document.getElementById(recordingInputInfo.inputId).value = combo;
+        document.getElementById(recordingInputInfo.inputId + '_display').innerHTML = combo.split('+').map(k => `<kbd>${k.toUpperCase()}</kbd>`).join('');
+    }
+    
+    if (!isModifier) {
+        stopRecording();
+    }
+}
+
+function stopRecording() {
+    if (!recordingInputInfo) return;
+    window.removeEventListener('keydown', handleKeydown, {capture: true});
+    recordingInputInfo.btn.textContent = "Record";
+    recordingInputInfo.btn.classList.remove("recording-active");
+    recordingInputInfo = null;
+}
+</script>
+
 </body>
 </html>"""
 
@@ -578,6 +759,14 @@ def index():
         settings=settings, theme=theme,
         history=history, prompts=prompts, stats=stats,
         dictionary=dictionary, insight_label=insight_label, insight_score=insight_score)
+
+@app.route("/complete_onboarding", methods=["POST"])
+def complete_onboarding():
+    style = request.form.get("speaking_style", "Casual")
+    ptt = request.form.get("hotkey_ptt", "ctrl+windows")
+    toggle = request.form.get("hotkey_toggle", "ctrl+windows+space")
+    database.update_user_settings("localuser@localhost", style, "dark", ptt, toggle, onboarded=1, show_ui=1)
+    return redirect(url_for("index"))
 
 @app.route("/update_settings", methods=["POST"])
 def update_settings():

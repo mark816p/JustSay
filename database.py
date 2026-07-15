@@ -83,11 +83,11 @@ def init_db():
     conn.close()
 
 # --- History ---
-def save_history(audio_path, transcript):
+def save_history(transcript):
     word_count = len(transcript.split())
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO history (audio_path, transcript, word_count) VALUES (?, ?, ?)", (audio_path, transcript, word_count))
+    c.execute("INSERT INTO history (audio_path, transcript, word_count) VALUES (?, ?, ?)", ("", transcript, word_count))
     conn.commit()
     conn.close()
 

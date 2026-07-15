@@ -134,11 +134,18 @@ class JustSayApp:
 
         text = self.transcriber.transcribe(audio_file, initial_prompt=prompt)
         if text:
-            database.save_history(audio_file, text)
+            database.save_history(text)
             pyperclip.copy(text + " ")
             time.sleep(0.1)
             keyboard.send("ctrl+v")
             self.cmd_queue.put("PASTED")
+            
+        # Delete audio file to respect privacy and save storage
+        try:
+            if os.path.exists(audio_file):
+                os.remove(audio_file)
+        except Exception:
+            pass
 
     # ── Tray ──────────────────────────────────────────────────
     def create_tray(self):
