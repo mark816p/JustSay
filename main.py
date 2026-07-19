@@ -29,7 +29,6 @@ class JustSayApp:
         self.cmd_queue = multiprocessing.Queue()
         self.widget_process = multiprocessing.Process(target=run_widget_app, args=(self.cmd_queue,), daemon=True)
         self.server_process = multiprocessing.Process(target=run_server_process, daemon=True)
-
     def _on_volume(self, rms):
         if self.is_recording:
             self.cmd_queue.put(f"VOL:{rms}")
@@ -140,6 +139,12 @@ class JustSayApp:
         if text:
             database.save_history(text)
             pyperclip.copy(text + " ")
+            
+            # Release modifiers to prevent Ctrl+V collision
+            for mod in ["ctrl", "shift", "alt", "windows"]:
+                try: keyboard.release(mod)
+                except: pass
+                
             time.sleep(0.1)
             keyboard.send("ctrl+v")
             self.cmd_queue.put("PASTED")
@@ -153,7 +158,11 @@ class JustSayApp:
 
     # ── Tray ──────────────────────────────────────────────────
     def create_tray(self):
-        image = Image.new('RGB', (64, 64), color=(80, 80, 80))
+        from PIL import ImageDraw
+        image = Image.new('RGBA', (64, 64), color=(0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        draw.ellipse((4, 4, 60, 60), fill=(41, 151, 255, 255))
+        
         menu = (
             item('Open Dashboard', self.open_dashboard),
             item('Quit JustSay', self.quit_app)
