@@ -61,15 +61,39 @@ class JustSayWidget(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
         line_w = 150
-        line_h = 3
         start_x = (self.width_val - line_w) / 2
-        start_y = self.height_val - line_h
         
         if self.is_recording:
-            # Subtle red line when recording
-            painter.setBrush(QColor(255, 50, 50, 225))
+            # Animate height based on volume
+            target_h = 3 + min((getattr(self, 'current_volume', 0) / 2000.0) * 12, 12)
+            if not hasattr(self, 'animated_h'): self.animated_h = 3
+            self.animated_h += (target_h - self.animated_h) * 0.4
+            
+            line_h = max(3, self.animated_h)
+            start_y = self.height_val - line_h
+            
+            # Subtle red line that pulses smoothly when recording
+            if not hasattr(self, 'pulse_alpha'):
+                self.pulse_alpha = 100
+                self.pulse_dir = 5
+            
+            self.pulse_alpha += self.pulse_dir
+            if self.pulse_alpha >= 250:
+                self.pulse_alpha = 250
+                self.pulse_dir = -5
+            elif self.pulse_alpha <= 50:
+                self.pulse_alpha = 50
+                self.pulse_dir = 5
+                
+            painter.setBrush(QColor(255, 50, 50, self.pulse_alpha))
         else:
             # Subtle black line when idle
+            line_h = 3
+            start_y = self.height_val - line_h
+            if hasattr(self, 'pulse_alpha'):
+                del self.pulse_alpha
+            if hasattr(self, 'animated_h'):
+                del self.animated_h
             painter.setBrush(QColor(0, 0, 0, 200))
             
         painter.setPen(Qt.PenStyle.NoPen)
@@ -100,6 +124,7 @@ class JustSayWidget(QWidget):
 def run_widget_app(command_queue):
     app = QApplication(sys.argv)
     widget = JustSayWidget()
+    widget.current_volume = 0
     
     db_check_counter = 0
     def check_queue():
@@ -108,9 +133,17 @@ def run_widget_app(command_queue):
             cmd = command_queue.get()
             if cmd == "START":
                 widget.is_recording = True
+                widget.current_volume = 0
                 widget.undo_btn.hide()
             elif cmd == "STOP":
                 widget.is_recording = False
+                widget.current_volume = 0
+            elif cmd.startswith("VOL:"):
+                try:
+                    vol = float(cmd.split(":")[1])
+                    widget.current_volume = vol
+                except:
+                    pass
             elif cmd == "PASTED":
                 if widget.show_ui: widget.show_undo_btn()
             elif cmd == "SHOW":

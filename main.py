@@ -22,13 +22,17 @@ def run_server_process():
 class JustSayApp:
     def __init__(self):
         database.init_db()
-        self.recorder = AudioRecorder()
+        self.recorder = AudioRecorder(volume_callback=self._on_volume)
         self.transcriber = Transcriber(model_size="base")
         self.is_recording = False
         self.toggle_lock = threading.Lock()
         self.cmd_queue = multiprocessing.Queue()
         self.widget_process = multiprocessing.Process(target=run_widget_app, args=(self.cmd_queue,), daemon=True)
         self.server_process = multiprocessing.Process(target=run_server_process, daemon=True)
+
+    def _on_volume(self, rms):
+        if self.is_recording:
+            self.cmd_queue.put(f"VOL:{rms}")
 
     def start(self):
         self.server_process.start()

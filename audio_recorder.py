@@ -3,11 +3,12 @@ import wave
 import threading
 
 class AudioRecorder:
-    def __init__(self, chunk=1024, format=pyaudio.paInt16, channels=1, rate=16000):
+    def __init__(self, chunk=1024, format=pyaudio.paInt16, channels=1, rate=16000, volume_callback=None):
         self.chunk = chunk
         self.format = format
         self.channels = channels
         self.rate = rate
+        self.volume_callback = volume_callback
         self.p = pyaudio.PyAudio()
         self.frames = []
         self.is_recording = False
@@ -26,10 +27,14 @@ class AudioRecorder:
         self._record_thread.start()
 
     def _record(self):
+        import audioop
         while self.is_recording:
             try:
-                data = self.stream.read(self.chunk)
+                data = self.stream.read(self.chunk, exception_on_overflow=False)
                 self.frames.append(data)
+                if self.volume_callback:
+                    rms = audioop.rms(data, 2)
+                    self.volume_callback(rms)
             except Exception as e:
                 print(f"Error recording audio: {e}")
                 break
