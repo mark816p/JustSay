@@ -153,7 +153,7 @@ class JustSayApp:
             for mod in ["ctrl", "shift", "alt", "windows"]:
                 try:
                     keyboard.release(mod)
-                except:
+                except Exception:
                     pass
 
             time.sleep(0.1)

@@ -163,7 +163,7 @@ def run_widget_app(command_queue):
                 try:
                     vol = float(cmd.split(":")[1])
                     widget.current_volume = vol
-                except:
+                except (IndexError, ValueError):
                     pass
             elif cmd == "PASTED":
                 if widget.show_ui:

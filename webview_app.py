@@ -10,7 +10,7 @@ def run_webview_app():
     max_retries = 20
     for i in range(max_retries):
         try:
-            r = requests.get(url)
+            r = requests.get(url, timeout=2.0)
             if r.status_code == 200:
                 break
         except requests.exceptions.ConnectionError:
