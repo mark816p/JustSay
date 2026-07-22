@@ -1,5 +1,4 @@
 import webview
-import sys
 import time
 import requests
 
@@ -19,7 +18,7 @@ def run_webview_app():
         time.sleep(0.5)
 
     # Launch native window wrapping the local server
-    window = webview.create_window(
+    webview.create_window(
         'JustSay Dashboard',
         url,
         width=1024,

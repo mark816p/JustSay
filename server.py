@@ -841,7 +841,7 @@ def clear_history():
         for f in os.listdir(audio_dir):
             try:
                 os.remove(os.path.join(audio_dir, f))
-            except:
+            except Exception as e:
                 pass
     return redirect(url_for("index"))
 
