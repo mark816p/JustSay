@@ -5,7 +5,6 @@ import threading
 import time
 import datetime
 import multiprocessing
-import webbrowser
 import keyboard
 import pyperclip
 from PIL import Image
@@ -183,7 +182,6 @@ class JustSayApp:
         self.icon.run()
 
     def open_dashboard(self, icon, item):
-        import multiprocessing
         from webview_app import run_webview_app
         p = multiprocessing.Process(target=run_webview_app, daemon=True)
         p.start()

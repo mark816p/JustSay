@@ -1,6 +1,7 @@
 import pyaudio
 import wave
 import threading
+import audioop
 
 
 class AudioRecorder:
@@ -28,7 +29,6 @@ class AudioRecorder:
         self._record_thread.start()
 
     def _record(self):
-        import audioop
         while self.is_recording:
             try:
                 data = self.stream.read(
