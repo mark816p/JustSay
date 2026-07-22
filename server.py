@@ -37,7 +37,7 @@ HTML = r"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>JustSay Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -46,37 +46,39 @@ HTML = r"""<!DOCTYPE html>
   --trans: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   --r-xl: 24px;
   --r-lg: 16px;
-  --r-md: 10px;
+  --r-md: 12px;
 }
 
 [data-theme=dark] {
-  --bg: #000000;
-  --surface: rgba(30, 30, 35, 0.65);
-  --surface-hover: rgba(50, 50, 55, 0.85);
+  --bg: #09090b;
+  --surface: rgba(24, 24, 27, 0.65);
+  --surface-hover: rgba(39, 39, 42, 0.85);
   --border: rgba(255,255,255,0.08);
-  --border-strong: rgba(255,255,255,0.18);
-  --text: #ffffff;
-  --text-muted: #98989d;
-  --accent: #2997ff;
-  --accent-hover: #147ce5;
-  --danger: #ff3b30;
-  --shadow: 0 10px 40px rgba(0,0,0,0.5);
-  --input-bg: rgba(255,255,255,0.05);
+  --border-strong: rgba(255,255,255,0.15);
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-glow: rgba(59, 130, 246, 0.2);
+  --danger: #ef4444;
+  --shadow: 0 10px 40px rgba(0,0,0,0.8);
+  --input-bg: rgba(255,255,255,0.03);
 }
 
 [data-theme=light] {
-  --bg: #f5f5f7;
-  --surface: rgba(255, 255, 255, 0.7);
-  --surface-hover: rgba(255, 255, 255, 0.95);
+  --bg: #ffffff;
+  --surface: rgba(244, 244, 245, 0.7);
+  --surface-hover: rgba(228, 228, 231, 0.95);
   --border: rgba(0,0,0,0.08);
-  --border-strong: rgba(0,0,0,0.18);
-  --text: #1d1d1f;
-  --text-muted: #86868b;
-  --accent: #0066cc;
-  --accent-hover: #0055b3;
-  --danger: #ff3b30;
+  --border-strong: rgba(0,0,0,0.15);
+  --text: #09090b;
+  --text-muted: #71717a;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --danger: #dc2626;
   --shadow: 0 10px 40px rgba(0,0,0,0.06);
-  --input-bg: rgba(0,0,0,0.03);
+  --input-bg: rgba(0,0,0,0.02);
 }
 
 body {
@@ -89,20 +91,20 @@ body {
   position: relative;
 }
 
-/* Animated Gradient Mesh Background */
+/* Subtler Animated Gradient Mesh Background */
 .bg-mesh {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
   z-index: -1;
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(41, 151, 255, 0.15), transparent 40%),
-    radial-gradient(circle at 85% 30%, rgba(255, 59, 48, 0.1), transparent 40%);
-  filter: blur(60px);
+    radial-gradient(circle at 10% 50%, var(--accent-glow), transparent 40%),
+    radial-gradient(circle at 90% 20%, rgba(139, 92, 246, 0.08), transparent 40%);
+  filter: blur(80px);
   animation: meshAnim 20s infinite alternate;
 }
 @keyframes meshAnim {
   0% { transform: scale(1); }
-  100% { transform: scale(1.1); }
+  100% { transform: scale(1.05); }
 }
 
 /* APP LAYOUT */
@@ -110,34 +112,32 @@ body {
 
 /* SIDEBAR */
 .sidebar {
-  width: 280px;
-  background: var(--surface);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border-right: 1px solid var(--border);
-  padding: 40px 24px;
+  width: 260px;
+  background: transparent;
+  padding: 40px 20px;
   display: flex;
   flex-direction: column;
   z-index: 10;
+  border-right: 1px solid var(--border);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 50px;
-  padding: 0 10px;
+  padding: 0 12px;
 }
-.brand-icon { width: 44px; height: 44px; background: var(--text); color: var(--bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-.brand-text { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+.brand-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px var(--accent-glow); }
+.brand-text { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px; }
 
 .nav-item {
-  padding: 14px 18px;
+  padding: 12px 16px;
   border-radius: var(--r-md);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: var(--text-muted);
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 500;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: var(--trans);
   display: flex;
@@ -145,48 +145,58 @@ body {
   gap: 12px;
   user-select: none;
 }
-.nav-item svg { width: 20px; height: 20px; opacity: 0.8; }
+.nav-item svg { width: 18px; height: 18px; opacity: 0.7; }
 .nav-item:hover { background: var(--surface-hover); color: var(--text); }
-.nav-item.active { background: var(--text); color: var(--bg); box-shadow: var(--shadow); }
-.nav-item.active svg { opacity: 1; }
+.nav-item.active { background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.nav-item.active svg { opacity: 1; color: var(--accent); }
 .sidebar-bottom { margin-top: auto; }
+
+.version-tag {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 16px;
+  opacity: 0.6;
+  letter-spacing: 0.5px;
+}
 
 /* MAIN CONTENT */
 .main-content {
   flex: 1;
-  padding: 60px 80px;
+  padding: 50px 70px;
   overflow-y: auto;
   scroll-behavior: smooth;
+  background: linear-gradient(to right, rgba(0,0,0,0.2), transparent);
 }
-.header-title { font-size: 3.5rem; font-weight: 700; letter-spacing: -1.5px; margin-bottom: 8px; }
-.header-sub { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 40px; font-weight: 500; }
+.header-title { font-size: 3rem; font-weight: 600; letter-spacing: -1px; margin-bottom: 10px; }
+.header-sub { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 40px; font-weight: 400; }
 
 /* CARDS */
-.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 40px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
 .card {
   background: var(--surface);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
-  padding: 32px;
+  padding: 30px;
   transition: var(--trans);
   position: relative;
   overflow: hidden;
 }
-.card:hover { transform: translateY(-4px) scale(1.01); border-color: var(--border-strong); box-shadow: var(--shadow); }
-.card-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 16px; }
-.card-value { font-size: 3.5rem; font-weight: 700; letter-spacing: -1px; line-height: 1.1; margin-bottom: 8px; }
-.card-desc { font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
+.card:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: var(--shadow); }
+.card-title { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; }
+.card-value { font-size: 3rem; font-weight: 600; letter-spacing: -1px; line-height: 1.1; margin-bottom: 8px; }
+.card-desc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
 
 /* FORMS & BUTTONS */
 .btn {
-  background: var(--accent);
-  color: #fff;
+  background: var(--text);
+  color: var(--bg);
   border: none;
   padding: 12px 24px;
-  border-radius: 99px;
-  font-size: 0.95rem;
+  border-radius: var(--r-md);
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--trans);
@@ -195,42 +205,44 @@ body {
   justify-content: center;
   text-decoration: none;
 }
-.btn:hover { background: var(--accent-hover); transform: scale(1.03); }
-.btn-danger { background: var(--danger); }
-.btn-danger:hover { background: #d32f2f; }
+.btn:hover { background: var(--text-muted); transform: scale(1.02); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 15px var(--accent-glow); }
+.btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+.btn-danger:hover { background: var(--danger); color: #fff; }
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-.btn-outline:hover { background: var(--surface-hover); }
+.btn-outline:hover { background: var(--surface-hover); border-color: var(--border-strong); }
 
 input, select {
   background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 16px 20px;
-  border-radius: var(--r-lg);
-  font-size: 1rem;
+  padding: 14px 18px;
+  border-radius: var(--r-md);
+  font-size: 0.95rem;
   width: 100%;
   transition: var(--trans);
   outline: none;
   font-family: var(--font-sans);
 }
-input:focus, select:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 4px rgba(41,151,255,0.2); }
-.form-group { margin-bottom: 24px; }
-.form-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; }
+input:focus, select:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-glow); }
+.form-group { margin-bottom: 20px; }
+.form-label { display: block; font-weight: 500; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted); }
 .form-row { display: flex; gap: 12px; align-items: center; }
 
 /* SECTIONS */
-.section { display: none; opacity: 0; animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.section { display: none; opacity: 0; animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .section.active { display: block; }
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 /* TABLES */
-.table-wrap { overflow-x: auto; margin-top: 10px; }
+.table-wrap { overflow-x: auto; margin-top: 5px; }
 table { width: 100%; border-collapse: separate; border-spacing: 0; }
-th { text-align: left; color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; padding: 16px 20px; border-bottom: 1px solid var(--border); letter-spacing: 0.5px; }
-td { padding: 20px; border-bottom: 1px solid var(--border); font-size: 0.95rem; font-weight: 500; }
+th { text-align: left; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; padding: 14px 20px; border-bottom: 1px solid var(--border); letter-spacing: 0.5px; }
+td { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 0.95rem; font-weight: 400; }
 tr:last-child td { border-bottom: none; }
 tr { transition: var(--trans); }
 tr:hover td { background: var(--surface-hover); }
@@ -238,17 +250,18 @@ tr:hover td { background: var(--surface-hover); }
 /* TAGS & SHORTCUTS */
 .tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .tag {
-  background: var(--input-bg);
+  background: var(--surface);
   border: 1px solid var(--border);
-  padding: 8px 16px;
-  border-radius: 99px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--r-md);
+  font-size: 0.85rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.tag a { color: var(--danger); text-decoration: none; font-size: 1.2rem; line-height: 1; }
+.tag a { color: var(--text-muted); text-decoration: none; font-size: 1.1rem; line-height: 1; transition: var(--trans); }
+.tag a:hover { color: var(--danger); }
 
 .shortcut-box {
   background: var(--surface);
@@ -256,21 +269,23 @@ tr:hover td { background: var(--surface-hover); }
   padding: 20px;
   border-radius: var(--r-lg);
   margin-bottom: 16px;
+  transition: var(--trans);
 }
-.shortcut-keys { display: inline-flex; gap: 6px; }
+.shortcut-box:hover { border-color: var(--border-strong); }
+.shortcut-keys { display: inline-flex; gap: 4px; }
 .shortcut-keys kbd {
   background: var(--text);
   color: var(--bg);
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   display: inline-block;
   text-transform: uppercase;
 }
 
-/* ONBOARDING FLOW */
+/* WISPR FLOW INSPIRED ONBOARDING */
 .onboard-container {
   display: flex;
   align-items: center;
@@ -280,42 +295,42 @@ tr:hover td { background: var(--surface-hover); }
 }
 .onboard-card {
   background: var(--surface);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
   border: 1px solid var(--border-strong);
-  border-radius: var(--r-xl);
-  padding: 50px;
+  border-radius: 32px;
+  padding: 60px 50px;
   width: 100%;
-  max-width: 600px;
-  box-shadow: var(--shadow);
+  max-width: 540px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   text-align: center;
   position: relative;
   overflow: hidden;
 }
-.onboard-step { display: none; opacity: 0; animation: fadeUp 0.5s forwards; }
+.onboard-step { display: none; opacity: 0; animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .onboard-step.active { display: block; }
-.onboard-icon { margin: 0 auto 30px; width: 64px; height: 64px; background: var(--text); color: var(--bg); border-radius: 20px; display: flex; align-items: center; justify-content: center; }
+.onboard-icon { margin: 0 auto 30px; width: 64px; height: 64px; background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px var(--accent-glow); }
 
 /* STYLE PICKER CARDS */
 .style-picker {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
   margin: 30px 0;
   text-align: left;
 }
 .style-card {
-  border: 2px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px;
   cursor: pointer;
   transition: var(--trans);
   background: var(--input-bg);
 }
 .style-card:hover { border-color: var(--border-strong); background: var(--surface-hover); }
-.style-card.selected { border-color: var(--accent); background: rgba(41, 151, 255, 0.1); box-shadow: 0 0 0 2px rgba(41, 151, 255, 0.3); }
-.style-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
-.style-desc { font-size: 0.9rem; color: var(--text-muted); }
+.style-card.selected { border-color: var(--accent); background: var(--accent-glow); box-shadow: 0 0 0 1px var(--accent); }
+.style-title { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+.style-desc { font-size: 0.8rem; color: var(--text-muted); }
 
 /* RECORDING INDICATOR */
 .recording-active {
@@ -324,9 +339,9 @@ tr:hover td { background: var(--surface-hover); }
   animation: pulseRed 1.5s infinite;
 }
 @keyframes pulseRed {
-  0% { box-shadow: 0 0 0 0 rgba(255,59,48, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(255,59,48, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255,59,48, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(239,68,68, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(239,68,68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,68,68, 0); }
 }
 </style>
 </head>
@@ -342,70 +357,70 @@ tr:hover td { background: var(--surface-hover); }
       <!-- STEP 1: Welcome -->
       <div class="onboard-step active" id="step-1">
         <div class="onboard-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:32px;height:32px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:32px;height:32px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/></svg>
         </div>
-        <h1 class="header-title" style="font-size:2.5rem;margin-bottom:12px;">Welcome to JustSay</h1>
-        <p class="header-sub">Your intelligent, fully-local voice OS. Let's get your triggers and preferences set up.</p>
-        <button type="button" class="btn" style="width:100%;margin-top:20px;font-size:1.1rem;padding:16px;" onclick="nextStep(2)">Get Started</button>
+        <h1 class="header-title" style="font-size:2.2rem;margin-bottom:10px;">Meet JustSay</h1>
+        <p class="header-sub">Your brilliant, fully-local AI voice assistant. Let's get things set up perfectly.</p>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:20px;font-size:1rem;padding:14px;border-radius:24px;" onclick="nextStep(2)">Get Started</button>
       </div>
 
       <!-- STEP 2: Shortcuts -->
       <div class="onboard-step" id="step-2">
-        <h1 class="header-title" style="font-size:2rem;margin-bottom:12px;">Configure Triggers</h1>
-        <p class="header-sub" style="margin-bottom:30px;">How do you want to activate dictation globally?</p>
+        <h1 class="header-title" style="font-size:1.8rem;margin-bottom:10px;">Set Your Triggers</h1>
+        <p class="header-sub" style="margin-bottom:24px;">How do you want to start dictating?</p>
         
         <div class="form-group" style="text-align:left;">
-          <label class="form-label">Push-to-Talk (Hold)</label>
-          <div style="display:flex;gap:12px;align-items:center;">
+          <label class="form-label">Push-to-Talk (Hold & Speak)</label>
+          <div style="display:flex;gap:10px;align-items:center;">
             <input type="hidden" name="hotkey_ptt" id="ob_ptt_input" value="ctrl+windows">
             <div id="ob_ptt_input_display" class="shortcut-keys" style="flex:1;"><kbd>CTRL</kbd><kbd>WINDOWS</kbd></div>
-            <button type="button" class="btn btn-outline" onclick="startRecording(this, 'ob_ptt_input')">Record Hotkey</button>
+            <button type="button" class="btn btn-outline" style="border-radius:24px" onclick="startRecording(this, 'ob_ptt_input')">Record</button>
           </div>
         </div>
 
-        <div class="form-group" style="text-align:left;margin-top:30px;">
-          <label class="form-label">Toggle Recording (Tap)</label>
-          <div style="display:flex;gap:12px;align-items:center;">
+        <div class="form-group" style="text-align:left;margin-top:24px;">
+          <label class="form-label">Toggle (Tap to Start/Stop)</label>
+          <div style="display:flex;gap:10px;align-items:center;">
             <input type="hidden" name="hotkey_toggle" id="ob_toggle_input" value="ctrl+windows+space">
             <div id="ob_toggle_input_display" class="shortcut-keys" style="flex:1;"><kbd>CTRL</kbd><kbd>WINDOWS</kbd><kbd>SPACE</kbd></div>
-            <button type="button" class="btn btn-outline" onclick="startRecording(this, 'ob_toggle_input')">Record Hotkey</button>
+            <button type="button" class="btn btn-outline" style="border-radius:24px" onclick="startRecording(this, 'ob_toggle_input')">Record</button>
           </div>
         </div>
 
-        <div style="display:flex;gap:16px;margin-top:40px;">
-          <button type="button" class="btn btn-outline" style="flex:1;padding:16px;" onclick="nextStep(1)">Back</button>
-          <button type="button" class="btn" style="flex:1;padding:16px;" onclick="nextStep(3)">Continue</button>
+        <div style="display:flex;gap:12px;margin-top:30px;">
+          <button type="button" class="btn btn-outline" style="flex:1;padding:14px;border-radius:24px;" onclick="nextStep(1)">Back</button>
+          <button type="button" class="btn btn-primary" style="flex:1;padding:14px;border-radius:24px;" onclick="nextStep(3)">Continue</button>
         </div>
       </div>
 
       <!-- STEP 3: Style -->
       <div class="onboard-step" id="step-3">
-        <h1 class="header-title" style="font-size:2rem;margin-bottom:12px;">Formatting Tone</h1>
-        <p class="header-sub" style="margin-bottom:20px;">How should the AI naturally format your speech?</p>
+        <h1 class="header-title" style="font-size:1.8rem;margin-bottom:10px;">Formatting Tone</h1>
+        <p class="header-sub" style="margin-bottom:16px;">How should the AI naturally format your speech?</p>
         
         <input type="hidden" name="speaking_style" id="ob_style_input" value="Casual">
         <div class="style-picker">
           <div class="style-card selected" onclick="selectStyle(this, 'Casual')">
             <div class="style-title">Casual</div>
-            <div class="style-desc">Natural punctuation, conversational tone. Best for messaging.</div>
+            <div class="style-desc">Natural punctuation. Good for chats.</div>
           </div>
           <div class="style-card" onclick="selectStyle(this, 'Formal')">
             <div class="style-title">Formal</div>
-            <div class="style-desc">Strict grammar, properly capitalized sentences. Best for emails.</div>
+            <div class="style-desc">Strict grammar. Perfect for emails.</div>
           </div>
           <div class="style-card" onclick="selectStyle(this, 'Code')">
             <div class="style-title">Code</div>
-            <div class="style-desc">Formats symbols, camelCase, and syntax natively.</div>
+            <div class="style-desc">Formats symbols, camelCase natively.</div>
           </div>
           <div class="style-card" onclick="selectStyle(this, 'Serious')">
             <div class="style-title">Serious</div>
-            <div class="style-desc">Concise, direct, highly professional tone without filler words.</div>
+            <div class="style-desc">Concise, direct, no filler words.</div>
           </div>
         </div>
 
-        <div style="display:flex;gap:16px;margin-top:20px;">
-          <button type="button" class="btn btn-outline" style="flex:1;padding:16px;" onclick="nextStep(2)">Back</button>
-          <button type="submit" class="btn" style="flex:1;padding:16px;">Complete Setup</button>
+        <div style="display:flex;gap:12px;margin-top:20px;">
+          <button type="button" class="btn btn-outline" style="flex:1;padding:14px;border-radius:24px;" onclick="nextStep(2)">Back</button>
+          <button type="submit" class="btn btn-primary" style="flex:1;padding:14px;border-radius:24px;">Complete Setup</button>
         </div>
       </div>
 
@@ -433,7 +448,7 @@ function selectStyle(el, val) {
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:22px;height:22px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;height:20px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/></svg>
       </div>
       <div class="brand-text">JustSay</div>
     </div>
@@ -461,9 +476,10 @@ function selectStyle(el, val) {
 
     <div class="sidebar-bottom">
       <div class="nav-item" onclick="toggleTheme()">
-        <span id="theme-icon">{{ "🌙" if theme == "dark" else "☀️" }}</span>
-        <span id="theme-label" style="margin-left: 8px">{{ "Dark Appearance" if theme == "dark" else "Light Appearance" }}</span>
+        <span id="theme-icon" style="font-size:1.1rem">{{ "🌙" if theme == "dark" else "☀️" }}</span>
+        <span id="theme-label" style="margin-left: 8px">{{ "Dark Theme" if theme == "dark" else "Light Theme" }}</span>
       </div>
+      <div class="version-tag">v13</div>
     </div>
   </aside>
 
@@ -477,7 +493,7 @@ function selectStyle(el, val) {
       
       <div class="card-grid">
         <div class="card">
-          <div class="card-title">Total Dictations</div>
+          <div class="card-title">Dictations</div>
           <div class="card-value">{{ stats.total_dictations }}</div>
           <div class="card-desc">Recorded voice inputs</div>
         </div>
@@ -488,22 +504,22 @@ function selectStyle(el, val) {
         </div>
         <div class="card">
           <div class="card-title">Speech Flow</div>
-          <div class="card-value" style="font-size:2rem;padding-top:12px;">{{ insight_label }}</div>
-          <div class="card-desc">Pacing score: {{ insight_score }}/100</div>
+          <div class="card-value" style="font-size:1.8rem;padding-top:12px;">{{ insight_label }}</div>
+          <div class="card-desc">Score: {{ insight_score }}/100</div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">Active Shortcuts</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:10px">
+        <div class="card-title" style="margin-bottom:20px">Active Shortcuts</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
           <div class="shortcut-box">
             <div class="shortcut-keys">{% for k in settings.hotkey_ptt.split('+') %}<kbd>{{ k.upper() }}</kbd>{% endfor %}</div>
-            <div style="font-weight:700;margin:10px 0 4px;font-size:1.1rem">Push-to-Talk (Hold)</div>
+            <div style="font-weight:600;margin:10px 0 4px;font-size:1rem">Push-to-Talk (Hold)</div>
             <div class="card-desc">Hold to record, release to transcribe.</div>
           </div>
           <div class="shortcut-box">
             <div class="shortcut-keys">{% for k in settings.hotkey_toggle.split('+') %}<kbd>{{ k.upper() }}</kbd>{% endfor %}</div>
-            <div style="font-weight:700;margin:10px 0 4px;font-size:1.1rem">Toggle Recording (Tap)</div>
+            <div style="font-weight:600;margin:10px 0 4px;font-size:1rem">Toggle Recording (Tap)</div>
             <div class="card-desc">Tap once to begin, tap again to paste.</div>
           </div>
         </div>
@@ -518,20 +534,20 @@ function selectStyle(el, val) {
           <p class="header-sub">On-device transcripts history. Audio is discarded automatically.</p>
         </div>
         <form action="/clear_history" method="POST" onsubmit="return confirm('Wipe all local recordings permanently?')">
-          <button type="submit" class="btn btn-danger">Clear Logs</button>
+          <button type="submit" class="btn btn-danger" style="border-radius:24px">Clear Logs</button>
         </form>
       </div>
       
-      <div class="card" style="padding:0">
+      <div class="card" style="padding:0; border:none; background:transparent">
         <div class="table-wrap">
-          <table>
+          <table style="background:var(--surface); border-radius:var(--r-xl); overflow:hidden;">
             <thead><tr><th>Timestamp</th><th>Transcript</th><th>Words</th></tr></thead>
             <tbody>
             {% for h in history %}
             <tr>
               <td style="color:var(--text-muted);white-space:nowrap">{{ h.timestamp }}</td>
               <td style="max-width:500px;line-height:1.6">{{ h.transcript }}</td>
-              <td><span class="tag" style="display:inline-flex;padding:4px 10px;font-size:0.8rem">{{ h.word_count }}</span></td>
+              <td><span class="tag" style="display:inline-flex;padding:4px 10px;font-size:0.75rem">{{ h.word_count }}</span></td>
             </tr>
             {% else %}
             <tr><td colspan="3" style="text-align:center;padding:80px;color:var(--text-muted);">No local recordings found.</td></tr>
@@ -548,9 +564,9 @@ function selectStyle(el, val) {
       <p class="header-sub">Define custom names, project terms, or jargon to improve accuracy.</p>
       
       <div class="card">
-        <form action="/add_to_dictionary" method="POST" class="form-row" style="margin-bottom: 30px;">
-          <input type="text" name="word" placeholder="e.g. Kubernetes, Antigravity" required style="max-width:400px">
-          <button type="submit" class="btn">Add Word</button>
+        <form action="/add_to_dictionary" method="POST" class="form-row" style="margin-bottom: 24px;">
+          <input type="text" name="word" placeholder="e.g. Kubernetes, Antigravity" required style="max-width:400px;border-radius:24px">
+          <button type="submit" class="btn btn-primary" style="border-radius:24px">Add Word</button>
         </form>
 
         <div class="card-title">Active Terms</div>
@@ -561,7 +577,7 @@ function selectStyle(el, val) {
               <a href="/delete_from_dictionary/{{ word }}">&times;</a>
             </div>
           {% else %}
-            <span style="color:var(--text-muted);">No vocabulary terms added yet.</span>
+            <span style="color:var(--text-muted);font-size:0.9rem">No vocabulary terms added yet.</span>
           {% endfor %}
         </div>
       </div>
@@ -574,24 +590,24 @@ function selectStyle(el, val) {
       
       <div class="card" style="margin-bottom:24px">
         <form action="/add_prompt" method="POST" class="form-row">
-          <input type="text" name="prompt_text" placeholder="e.g. Capitalize acronyms. Use bullet points." required style="flex:1">
-          <button type="submit" class="btn">Add Rule</button>
+          <input type="text" name="prompt_text" placeholder="e.g. Capitalize acronyms. Use bullet points." required style="flex:1;border-radius:24px">
+          <button type="submit" class="btn btn-primary" style="border-radius:24px">Add Rule</button>
         </form>
       </div>
 
-      <div class="card" style="padding:0">
+      <div class="card" style="padding:0; border:none; background:transparent">
         <div class="table-wrap">
-          <table>
+          <table style="background:var(--surface); border-radius:var(--r-xl); overflow:hidden;">
             <thead><tr><th>Status</th><th>Rule Details</th><th style="text-align:right">Action</th></tr></thead>
             <tbody>
             {% for p in prompts %}
             <tr>
               <td style="width:140px">
-                {% if p.is_active %}<span style="color:var(--accent);font-weight:700">Active</span>
-                {% else %}<a href="/set_active/{{ p.id }}" style="color:var(--text);font-weight:600">Activate</a>{% endif %}
+                {% if p.is_active %}<span style="color:var(--accent);font-weight:600">Active</span>
+                {% else %}<a href="/set_active/{{ p.id }}" style="color:var(--text);font-weight:500">Activate</a>{% endif %}
               </td>
-              <td style="font-weight:500">{{ p.prompt_text }}</td>
-              <td style="text-align:right"><a href="/delete_prompt/{{ p.id }}" style="color:var(--danger);font-weight:600;text-decoration:none">Remove</a></td>
+              <td style="font-weight:400">{{ p.prompt_text }}</td>
+              <td style="text-align:right"><a href="/delete_prompt/{{ p.id }}" style="color:var(--danger);font-weight:500;text-decoration:none">Remove</a></td>
             </tr>
             {% else %}
             <tr><td colspan="3" style="text-align:center;padding:60px;color:var(--text-muted);">No rules added.</td></tr>
@@ -611,7 +627,7 @@ function selectStyle(el, val) {
         <form action="/update_settings" method="POST">
           <div class="form-group">
             <label class="form-label">Active Formatting Tone</label>
-            <select name="speaking_style" style="max-width:400px">
+            <select name="speaking_style" style="max-width:400px;border-radius:12px">
               <option value="Casual" {{ 'selected' if settings.speaking_style == 'Casual' }}>Casual (conversational and natural)</option>
               <option value="Formal" {{ 'selected' if settings.speaking_style == 'Formal' }}>Formal (strictly formatted)</option>
               <option value="Serious" {{ 'selected' if settings.speaking_style == 'Serious' }}>Serious (concise and direct)</option>
@@ -626,7 +642,7 @@ function selectStyle(el, val) {
               <div id="settings_ptt_input_display" class="shortcut-keys" style="flex:1;">
                 {% for k in settings.hotkey_ptt.split('+') %}<kbd>{{ k.upper() }}</kbd>{% endfor %}
               </div>
-              <button type="button" class="btn btn-outline" onclick="startRecording(this, 'settings_ptt_input')">Record</button>
+              <button type="button" class="btn btn-outline" style="border-radius:24px" onclick="startRecording(this, 'settings_ptt_input')">Record</button>
             </div>
           </div>
           
@@ -637,17 +653,17 @@ function selectStyle(el, val) {
               <div id="settings_toggle_input_display" class="shortcut-keys" style="flex:1;">
                 {% for k in settings.hotkey_toggle.split('+') %}<kbd>{{ k.upper() }}</kbd>{% endfor %}
               </div>
-              <button type="button" class="btn btn-outline" onclick="startRecording(this, 'settings_toggle_input')">Record</button>
+              <button type="button" class="btn btn-outline" style="border-radius:24px" onclick="startRecording(this, 'settings_toggle_input')">Record</button>
             </div>
           </div>
           
           <div class="form-group" style="display:flex;align-items:center;gap:12px;margin-top:30px">
-            <input type="checkbox" name="show_ui" value="1" id="showUI" {{ 'checked' if settings.get('show_ui', True) else '' }} style="width:20px;height:20px;">
-            <label for="showUI" class="form-label" style="margin:0">Show Overlay Widget</label>
+            <input type="checkbox" name="show_ui" value="1" id="showUI" {{ 'checked' if settings.get('show_ui', True) else '' }} style="width:18px;height:18px;accent-color:var(--accent)">
+            <label for="showUI" class="form-label" style="margin:0;cursor:pointer">Show Overlay Widget</label>
           </div>
           
           <input type="hidden" name="theme" id="theme-input" value="{{ theme }}">
-          <button type="submit" class="btn" style="margin-top:20px;width:200px">Save Preferences</button>
+          <button type="submit" class="btn btn-primary" style="margin-top:20px;width:200px;border-radius:24px">Save Preferences</button>
         </form>
       </div>
     </div>
@@ -669,7 +685,7 @@ function toggleTheme() {
   const next = cur === 'dark' ? 'light' : 'dark';
   html.setAttribute('data-theme', next);
   document.getElementById('theme-icon').textContent = next === 'dark' ? '🌙' : '☀️';
-  document.getElementById('theme-label').textContent = next === 'dark' ? 'Dark Appearance' : 'Light Appearance';
+  document.getElementById('theme-label').textContent = next === 'dark' ? 'Dark Theme' : 'Light Theme';
   if (document.getElementById('theme-input')) document.getElementById('theme-input').value = next;
   
   fetch('/api/set_theme', {

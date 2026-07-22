@@ -17,22 +17,22 @@ class JustSayWidget(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
-        self.width_val = 300
-        self.height_val = 40
+        self.width_val = 140
+        self.height_val = 60
         self.resize(self.width_val, self.height_val)
         
         # Position at the bottom center of the primary screen
         screen = QApplication.primaryScreen().geometry()
         x = (screen.width() - self.width_val) // 2
-        y = screen.height() - self.height_val - 20
+        y = screen.height() - self.height_val - 60
         self.move(x, y)
         
         self.show_ui = True
         
         self.is_recording = False
         
-        self.undo_btn = QPushButton("Add Custom Word?", self)
-        self.undo_btn.setGeometry(50, 0, 200, 30)
+        self.undo_btn = QPushButton("Add Word?", self)
+        self.undo_btn.setGeometry(20, 15, 100, 30)
         self.undo_btn.setStyleSheet("""
             QPushButton {
                 background-color: #4b5563;
@@ -60,45 +60,55 @@ class JustSayWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        line_w = 150
-        start_x = (self.width_val - line_w) / 2
-        
         if self.is_recording:
-            # Animate height based on volume
-            target_h = 3 + min((getattr(self, 'current_volume', 0) / 2000.0) * 12, 12)
-            if not hasattr(self, 'animated_h'): self.animated_h = 3
-            self.animated_h += (target_h - self.animated_h) * 0.4
+            # Animate width based on volume
+            target_w = 40 + min((getattr(self, 'current_volume', 0) / 2000.0) * 80, 80)
+            if not hasattr(self, 'animated_w'): self.animated_w = 40
+            self.animated_w += (target_w - self.animated_w) * 0.2
             
-            line_h = max(3, self.animated_h)
-            start_y = self.height_val - line_h
+            pill_w = max(40, self.animated_w)
+            pill_h = 40
+            start_x = (self.width_val - pill_w) / 2
+            start_y = (self.height_val - pill_h) / 2
             
-            # Subtle red line that pulses smoothly when recording
+            # Glowing blue orb style for active recording
             if not hasattr(self, 'pulse_alpha'):
-                self.pulse_alpha = 100
-                self.pulse_dir = 5
+                self.pulse_alpha = 150
+                self.pulse_dir = 8
             
             self.pulse_alpha += self.pulse_dir
-            if self.pulse_alpha >= 250:
-                self.pulse_alpha = 250
-                self.pulse_dir = -5
-            elif self.pulse_alpha <= 50:
-                self.pulse_alpha = 50
-                self.pulse_dir = 5
+            if self.pulse_alpha >= 255:
+                self.pulse_alpha = 255
+                self.pulse_dir = -8
+            elif self.pulse_alpha <= 120:
+                self.pulse_alpha = 120
+                self.pulse_dir = 8
                 
-            painter.setBrush(QColor(255, 50, 50, self.pulse_alpha))
-        else:
-            # Subtle black line when idle
-            line_h = 3
-            start_y = self.height_val - line_h
-            if hasattr(self, 'pulse_alpha'):
-                del self.pulse_alpha
-            if hasattr(self, 'animated_h'):
-                del self.animated_h
-            painter.setBrush(QColor(0, 0, 0, 200))
+            # Draw outer glow
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(59, 130, 246, int(self.pulse_alpha * 0.4))) # Blue glow
+            painter.drawRoundedRect(QRectF(start_x - 6, start_y - 6, pill_w + 12, pill_h + 12), (pill_h + 12) / 2, (pill_h + 12) / 2)
             
-        painter.setPen(Qt.PenStyle.NoPen)
-        rect = QRectF(start_x, start_y, line_w, line_h)
-        painter.drawRoundedRect(rect, 1.5, 1.5)
+            # Draw inner pill
+            painter.setBrush(QColor(37, 99, 235, self.pulse_alpha)) # Solid blue
+            painter.drawRoundedRect(QRectF(start_x, start_y, pill_w, pill_h), pill_h / 2, pill_h / 2)
+            
+            # Draw listening icon/dots
+            painter.setBrush(QColor(255, 255, 255, 255))
+            painter.drawEllipse(QRectF(self.width_val/2 - 4, self.height_val/2 - 4, 8, 8))
+        else:
+            # Idle state: very subtle translucent small pill
+            pill_w = 20
+            pill_h = 6
+            start_x = (self.width_val - pill_w) / 2
+            start_y = self.height_val - pill_h - 4
+            
+            if hasattr(self, 'pulse_alpha'): del self.pulse_alpha
+            if hasattr(self, 'animated_w'): del self.animated_w
+            
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(255, 255, 255, 40)) # Light translucent pill for dark themes
+            painter.drawRoundedRect(QRectF(start_x, start_y, pill_w, pill_h), pill_h / 2, pill_h / 2)
 
     def add_word_action(self):
         self.undo_btn.hide()
