@@ -26,6 +26,7 @@ def init_db():
             word_count INTEGER DEFAULT 0
         )
     ''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_history_timestamp ON history (timestamp DESC)')
     # Create Prompts table
     c.execute('''
         CREATE TABLE IF NOT EXISTS prompts (
@@ -34,6 +35,7 @@ def init_db():
             is_active INTEGER DEFAULT 0
         )
     ''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_prompts_active ON prompts (is_active)')
     # Create Users table (for Google Login & Settings)
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -229,3 +231,9 @@ def get_dictionary():
     rows = c.fetchall()
     conn.close()
     return [r[0] for r in rows]
+
+def optimize_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("VACUUM")
+    conn.commit()
+    conn.close()
