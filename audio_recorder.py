@@ -2,6 +2,7 @@ import pyaudio
 import wave
 import threading
 
+
 class AudioRecorder:
     def __init__(self, chunk=1024, format=pyaudio.paInt16, channels=1, rate=16000, volume_callback=None):
         self.chunk = chunk
@@ -30,7 +31,8 @@ class AudioRecorder:
         import audioop
         while self.is_recording:
             try:
-                data = self.stream.read(self.chunk, exception_on_overflow=False)
+                data = self.stream.read(
+                    self.chunk, exception_on_overflow=False)
                 self.frames.append(data)
                 if self.volume_callback:
                     rms = audioop.rms(data, 2)
@@ -43,12 +45,12 @@ class AudioRecorder:
         self.is_recording = False
         if self._record_thread is not None:
             self._record_thread.join()
-        
+
         if self.stream is not None:
             self.stream.stop_stream()
             self.stream.close()
             self.stream = None
-            
+
         if not self.frames:
             return None
 
@@ -59,7 +61,7 @@ class AudioRecorder:
         wf.setframerate(self.rate)
         wf.writeframes(b''.join(self.frames))
         wf.close()
-        
+
         return filename
 
     def terminate(self):

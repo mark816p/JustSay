@@ -1,3 +1,5 @@
+import socket
+import sys
 import os
 import threading
 import time
@@ -15,9 +17,11 @@ from transcriber import Transcriber
 import database
 from widget import run_widget_app
 
+
 def run_server_process():
     import server
     server.run_server()
+
 
 class JustSayApp:
     def __init__(self):
@@ -27,8 +31,11 @@ class JustSayApp:
         self.is_recording = False
         self.toggle_lock = threading.Lock()
         self.cmd_queue = multiprocessing.Queue()
-        self.widget_process = multiprocessing.Process(target=run_widget_app, args=(self.cmd_queue,), daemon=True)
-        self.server_process = multiprocessing.Process(target=run_server_process, daemon=True)
+        self.widget_process = multiprocessing.Process(
+            target=run_widget_app, args=(self.cmd_queue,), daemon=True)
+        self.server_process = multiprocessing.Process(
+            target=run_server_process, daemon=True)
+
     def _on_volume(self, rms):
         if self.is_recording:
             self.cmd_queue.put(f"VOL:{rms}")
@@ -38,7 +45,8 @@ class JustSayApp:
         self.widget_process.start()
 
         # Start the background hotkey listener thread
-        self.hotkey_thread = threading.Thread(target=self.hotkey_listener, daemon=True)
+        self.hotkey_thread = threading.Thread(
+            target=self.hotkey_listener, daemon=True)
         self.hotkey_thread.start()
 
         self.create_tray()
@@ -46,13 +54,14 @@ class JustSayApp:
     def hotkey_listener(self):
         ptt_was_pressed = False
         toggle_was_pressed = False
-        
+
         while True:
             # Check db for latest user settings
             settings = database.get_user_settings("localuser@localhost")
             if settings:
                 ptt_hotkey = settings.get("hotkey_ptt", "ctrl+windows")
-                toggle_hotkey = settings.get("hotkey_toggle", "ctrl+windows+space")
+                toggle_hotkey = settings.get(
+                    "hotkey_toggle", "ctrl+windows+space")
             else:
                 ptt_hotkey = "ctrl+windows"
                 toggle_hotkey = "ctrl+windows+space"
@@ -66,7 +75,8 @@ class JustSayApp:
                     translated = []
                     for k in keys:
                         if k in ("windows", "win"):
-                            translated.append("left windows") # keyboard library handles this well
+                            # keyboard library handles this well
+                            translated.append("left windows")
                         elif k in ("control", "ctrl"):
                             translated.append("ctrl")
                         else:
@@ -139,16 +149,18 @@ class JustSayApp:
         if text:
             database.save_history(text)
             pyperclip.copy(text + " ")
-            
+
             # Release modifiers to prevent Ctrl+V collision
             for mod in ["ctrl", "shift", "alt", "windows"]:
-                try: keyboard.release(mod)
-                except: pass
-                
+                try:
+                    keyboard.release(mod)
+                except:
+                    pass
+
             time.sleep(0.1)
             keyboard.send("ctrl+v")
             self.cmd_queue.put("PASTED")
-            
+
         # Delete audio file to respect privacy and save storage
         try:
             if os.path.exists(audio_file):
@@ -162,7 +174,7 @@ class JustSayApp:
         image = Image.new('RGBA', (64, 64), color=(0, 0, 0, 0))
         draw = ImageDraw.Draw(image)
         draw.ellipse((4, 4, 60, 60), fill=(41, 151, 255, 255))
-        
+
         menu = (
             item('Open Dashboard', self.open_dashboard),
             item('Quit JustSay', self.quit_app)
@@ -186,8 +198,6 @@ class JustSayApp:
         import sys
         sys.exit(0)
 
-import socket
-import sys
 
 def enforce_single_instance():
     try:
@@ -197,6 +207,7 @@ def enforce_single_instance():
     except OSError:
         print("Another instance of JustSay is already running. Exiting.")
         sys.exit(0)
+
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()

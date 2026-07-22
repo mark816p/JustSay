@@ -6,10 +6,12 @@ import sqlite3
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "js-local-secret-2024")
 
+
 def get_audio_filename(path):
     if not path:
         return ""
     return path.replace("\\", "/").split("/")[-1]
+
 
 def generate_insights(history):
     if not history:
@@ -21,7 +23,8 @@ def generate_insights(history):
     fillers = ['um', 'uh', 'like', 'you know', 'so', 'basically', 'actually']
     filler_count = sum(1 for w in words if w in fillers)
     avg_len = len(words) / len(history)
-    score = int(min(100, max(0, 100 - (filler_count / max(len(words), 1)) * 400)))
+    score = int(
+        min(100, max(0, 100 - (filler_count / max(len(words), 1)) * 400)))
     if filler_count > len(words) * 0.05:
         return "Conversational", score
     elif avg_len > 25:
@@ -30,6 +33,7 @@ def generate_insights(history):
         return "Concise", score
     else:
         return "Fluent", score
+
 
 HTML = r"""<!DOCTYPE html>
 <html lang="en" data-theme="{{ theme }}">
@@ -752,12 +756,14 @@ function stopRecording() {
 </body>
 </html>"""
 
+
 @app.route("/")
 def index():
     settings = database.get_user_settings("localuser@localhost")
     if not settings:
-        settings = {'speaking_style': 'Casual', 'theme': 'dark', 'hotkey_ptt': 'ctrl+windows', 'hotkey_toggle': 'ctrl+windows+space', 'onboarded': False, 'show_ui': True}
-    
+        settings = {'speaking_style': 'Casual', 'theme': 'dark', 'hotkey_ptt': 'ctrl+windows',
+                    'hotkey_toggle': 'ctrl+windows+space', 'onboarded': False, 'show_ui': True}
+
     theme = (settings.get('theme') or 'dark').lower()
 
     history_raw = database.get_history()
@@ -772,17 +778,20 @@ def index():
     insight_label, insight_score = generate_insights(history_raw)
 
     return render_template_string(HTML,
-        settings=settings, theme=theme,
-        history=history, prompts=prompts, stats=stats,
-        dictionary=dictionary, insight_label=insight_label, insight_score=insight_score)
+                                  settings=settings, theme=theme,
+                                  history=history, prompts=prompts, stats=stats,
+                                  dictionary=dictionary, insight_label=insight_label, insight_score=insight_score)
+
 
 @app.route("/complete_onboarding", methods=["POST"])
 def complete_onboarding():
     style = request.form.get("speaking_style", "Casual")
     ptt = request.form.get("hotkey_ptt", "ctrl+windows")
     toggle = request.form.get("hotkey_toggle", "ctrl+windows+space")
-    database.update_user_settings("localuser@localhost", style, "dark", ptt, toggle, onboarded=1, show_ui=1)
+    database.update_user_settings(
+        "localuser@localhost", style, "dark", ptt, toggle, onboarded=1, show_ui=1)
     return redirect(url_for("index"))
+
 
 @app.route("/update_settings", methods=["POST"])
 def update_settings():
@@ -791,16 +800,20 @@ def update_settings():
     ptt = request.form.get("hotkey_ptt", "ctrl+windows")
     toggle = request.form.get("hotkey_toggle", "ctrl+windows+space")
     show_ui = 1 if request.form.get("show_ui") == "1" else 0
-    database.update_user_settings("localuser@localhost", style, theme, ptt, toggle, onboarded=1, show_ui=show_ui)
+    database.update_user_settings(
+        "localuser@localhost", style, theme, ptt, toggle, onboarded=1, show_ui=show_ui)
     return redirect(url_for("index"))
+
 
 @app.route("/api/set_theme", methods=["POST"])
 def set_theme_api():
     data = request.get_json() or {}
     s = database.get_user_settings("localuser@localhost")
     if s:
-        database.update_user_settings("localuser@localhost", s['speaking_style'], data.get('theme', 'dark'), s['hotkey_ptt'], s['hotkey_toggle'], s['onboarded'], s.get('show_ui', 1))
+        database.update_user_settings("localuser@localhost", s['speaking_style'], data.get(
+            'theme', 'dark'), s['hotkey_ptt'], s['hotkey_toggle'], s['onboarded'], s.get('show_ui', 1))
     return jsonify({"ok": True})
+
 
 @app.route("/add_to_dictionary", methods=["POST"])
 def add_to_dict():
@@ -808,6 +821,7 @@ def add_to_dict():
     if word and word.strip():
         database.add_to_dictionary(word.strip())
     return redirect(url_for("index"))
+
 
 @app.route("/delete_from_dictionary/<word>")
 def delete_from_dict(word):
@@ -818,36 +832,45 @@ def delete_from_dict(word):
     conn.close()
     return redirect(url_for("index"))
 
+
 @app.route("/clear_history", methods=["POST"])
 def clear_history():
     database.clear_history()
     audio_dir = database.AUDIO_DIR
     if os.path.exists(audio_dir):
         for f in os.listdir(audio_dir):
-            try: os.remove(os.path.join(audio_dir, f))
-            except: pass
+            try:
+                os.remove(os.path.join(audio_dir, f))
+            except:
+                pass
     return redirect(url_for("index"))
+
 
 @app.route("/add_prompt", methods=["POST"])
 def add_prompt():
     t = request.form.get("prompt_text")
-    if t: database.add_prompt(t)
+    if t:
+        database.add_prompt(t)
     return redirect(url_for("index"))
+
 
 @app.route("/set_active/<int:pid>")
 def set_active(pid):
     database.set_active_prompt(pid)
     return redirect(url_for("index"))
 
+
 @app.route("/delete_prompt/<int:pid>")
 def delete_prompt(pid):
     database.delete_prompt(pid)
     return redirect(url_for("index"))
 
+
 @app.route("/audio/<filename>")
 def get_audio(filename):
     audio_dir = database.AUDIO_DIR
     return send_file(os.path.join(audio_dir, filename))
+
 
 def run_server():
     database.init_db()
@@ -856,6 +879,7 @@ def run_server():
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
     app.run(host="127.0.0.1", port=2000, debug=False, use_reloader=False)
+
 
 if __name__ == "__main__":
     run_server()

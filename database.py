@@ -3,13 +3,16 @@ import os
 import datetime
 
 APP_NAME = "JustSay"
-APPDATA_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), APP_NAME)
+APPDATA_DIR = os.path.join(os.environ.get(
+    "APPDATA", os.path.expanduser("~")), APP_NAME)
 os.makedirs(APPDATA_DIR, exist_ok=True)
 
 DB_PATH = os.path.join(APPDATA_DIR, "justsay_data.db")
 AUDIO_DIR = os.path.join(APPDATA_DIR, "history_audio")
 os.makedirs(AUDIO_DIR, exist_ok=True)
 TEMP_AUDIO = os.path.join(APPDATA_DIR, "temp_recording.wav")
+
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -44,11 +47,13 @@ def init_db():
         )
     ''')
     try:
-        c.execute("ALTER TABLE users ADD COLUMN hotkey_ptt TEXT DEFAULT 'ctrl+windows'")
+        c.execute(
+            "ALTER TABLE users ADD COLUMN hotkey_ptt TEXT DEFAULT 'ctrl+windows'")
     except sqlite3.OperationalError:
         pass
     try:
-        c.execute("ALTER TABLE users ADD COLUMN hotkey_toggle TEXT DEFAULT 'ctrl+windows+space'")
+        c.execute(
+            "ALTER TABLE users ADD COLUMN hotkey_toggle TEXT DEFAULT 'ctrl+windows+space'")
     except sqlite3.OperationalError:
         pass
     try:
@@ -73,31 +78,37 @@ def init_db():
             word TEXT UNIQUE
         )
     ''')
-    
+
     # Insert default prompt if table is empty
     c.execute("SELECT COUNT(*) FROM prompts")
     if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO prompts (prompt_text, is_active) VALUES (?, ?)", 
+        c.execute("INSERT INTO prompts (prompt_text, is_active) VALUES (?, ?)",
                   ("Transcribe accurately, maintaining proper capitalization, natural punctuation, and smart formatting (e.g. capitalize names, add commas, format acronyms properly).", 1))
     conn.commit()
     conn.close()
 
 # --- History ---
+
+
 def save_history(transcript):
     word_count = len(transcript.split())
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO history (audio_path, transcript, word_count) VALUES (?, ?, ?)", ("", transcript, word_count))
+    c.execute("INSERT INTO history (audio_path, transcript, word_count) VALUES (?, ?, ?)",
+              ("", transcript, word_count))
     conn.commit()
     conn.close()
+
 
 def get_history():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id, timestamp, audio_path, transcript, word_count FROM history ORDER BY timestamp DESC")
+    c.execute(
+        "SELECT id, timestamp, audio_path, transcript, word_count FROM history ORDER BY timestamp DESC")
     rows = c.fetchall()
     conn.close()
     return [{"id": r[0], "timestamp": r[1], "audio_path": r[2], "transcript": r[3], "word_count": r[4]} for r in rows]
+
 
 def clear_history():
     conn = sqlite3.connect(DB_PATH)
@@ -105,6 +116,7 @@ def clear_history():
     c.execute("DELETE FROM history")
     conn.commit()
     conn.close()
+
 
 def get_statistics():
     conn = sqlite3.connect(DB_PATH)
@@ -117,6 +129,8 @@ def get_statistics():
     return {"total_dictations": total_dictations, "total_words": total_words}
 
 # --- Prompts ---
+
+
 def get_active_prompt():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -124,6 +138,7 @@ def get_active_prompt():
     row = c.fetchone()
     conn.close()
     return row[0] if row else ""
+
 
 def get_all_prompts():
     conn = sqlite3.connect(DB_PATH)
@@ -133,6 +148,7 @@ def get_all_prompts():
     conn.close()
     return [{"id": r[0], "prompt_text": r[1], "is_active": bool(r[2])} for r in rows]
 
+
 def set_active_prompt(prompt_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -141,12 +157,14 @@ def set_active_prompt(prompt_id):
     conn.commit()
     conn.close()
 
+
 def add_prompt(text):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("INSERT INTO prompts (prompt_text, is_active) VALUES (?, 0)", (text,))
     conn.commit()
     conn.close()
+
 
 def delete_prompt(prompt_id):
     conn = sqlite3.connect(DB_PATH)
@@ -156,12 +174,16 @@ def delete_prompt(prompt_id):
     conn.close()
 
 # --- Users & Settings ---
+
+
 def save_user(email, name):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT OR IGNORE INTO users (email, name) VALUES (?, ?)", (email, name))
+    c.execute(
+        "INSERT OR IGNORE INTO users (email, name) VALUES (?, ?)", (email, name))
     conn.commit()
     conn.close()
+
 
 def get_user_settings(email):
     conn = sqlite3.connect(DB_PATH)
@@ -180,21 +202,25 @@ def get_user_settings(email):
         }
     return None
 
+
 def update_user_settings(email, speaking_style, theme, hotkey_ptt="ctrl+windows", hotkey_toggle="ctrl+windows+space", onboarded=1, show_ui=1):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("UPDATE users SET speaking_style=?, theme=?, hotkey_ptt=?, hotkey_toggle=?, onboarded=?, show_ui=? WHERE email=?", 
+    c.execute("UPDATE users SET speaking_style=?, theme=?, hotkey_ptt=?, hotkey_toggle=?, onboarded=?, show_ui=? WHERE email=?",
               (speaking_style, theme, hotkey_ptt, hotkey_toggle, int(onboarded), int(show_ui), email))
     conn.commit()
     conn.close()
 
 # --- Dictionary ---
+
+
 def add_to_dictionary(word):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("INSERT OR IGNORE INTO dictionary (word) VALUES (?)", (word,))
     conn.commit()
     conn.close()
+
 
 def get_dictionary():
     conn = sqlite3.connect(DB_PATH)
