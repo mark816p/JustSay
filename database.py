@@ -1,6 +1,5 @@
 import sqlite3
 import os
-import datetime
 
 APP_NAME = "JustSay"
 APPDATA_DIR = os.path.join(os.environ.get(
@@ -231,6 +230,7 @@ def get_dictionary():
     rows = c.fetchall()
     conn.close()
     return [r[0] for r in rows]
+
 
 def optimize_db():
     conn = sqlite3.connect(DB_PATH)

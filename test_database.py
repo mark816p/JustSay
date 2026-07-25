@@ -1,6 +1,5 @@
 import os
 import sqlite3
-import pytest
 import database
 
 def test_database_init(tmp_path):

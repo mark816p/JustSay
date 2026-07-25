@@ -81,7 +81,7 @@ class JustSayApp:
                         else:
                             translated.append(k)
                     return all(keyboard.is_pressed(k) for k in translated)
-                except:
+                except Exception:
                     return False
 
             toggle_pressed = is_combo_pressed(toggle_hotkey)

@@ -706,50 +706,42 @@ function toggleTheme() {
 let recordingInputInfo = null;
 
 function startRecording(btn, inputId) {
-    if (recordingInputInfo) {
-        stopRecording();
-    }
-    recordingInputInfo = { btn, inputId };
-    btn.textContent = "Listening...";
-    btn.classList.add("recording-active");
-    window.addEventListener('keydown', handleKeydown, {capture: true});
+  if (recordingInputInfo) stopRecording();
+  recordingInputInfo = { btn, inputId };
+  btn.textContent = 'Listening\u2026';
+  btn.classList.add('recording-active');
+  window.addEventListener('keydown', handleKeydown, { capture: true });
 }
 
 function handleKeydown(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    let keys = [];
-    if (e.ctrlKey) keys.push('ctrl');
-    if (e.metaKey) keys.push('windows');
-    if (e.altKey) keys.push('alt');
-    if (e.shiftKey) keys.push('shift');
-    
-    let key = e.key.toLowerCase();
-    let isModifier = ['control', 'meta', 'alt', 'shift', 'os'].includes(key);
-    
-    if (!isModifier) {
-        if (key === ' ') key = 'space';
-        keys.push(key);
-    }
-    
-    if (keys.length > 0) {
-        const combo = keys.join('+');
-        document.getElementById(recordingInputInfo.inputId).value = combo;
-        document.getElementById(recordingInputInfo.inputId + '_display').innerHTML = combo.split('+').map(k => `<kbd>${k.toUpperCase()}</kbd>`).join('');
-    }
-    
-    if (!isModifier) {
-        stopRecording();
-    }
+  e.preventDefault();
+  e.stopPropagation();
+  const keys = [];
+  if (e.ctrlKey)  keys.push('ctrl');
+  if (e.metaKey)  keys.push('windows');
+  if (e.altKey)   keys.push('alt');
+  if (e.shiftKey) keys.push('shift');
+  let key = e.key.toLowerCase();
+  const isModifier = ['control', 'meta', 'alt', 'shift', 'os'].includes(key);
+  if (!isModifier) {
+    if (key === ' ') key = 'space';
+    keys.push(key);
+  }
+  if (keys.length > 0) {
+    const combo = keys.join('+');
+    document.getElementById(recordingInputInfo.inputId).value = combo;
+    document.getElementById(recordingInputInfo.inputId + '_display').innerHTML =
+      combo.split('+').map(k => `<kbd>${k.toUpperCase()}</kbd>`).join('');
+  }
+  if (!isModifier) stopRecording();
 }
 
 function stopRecording() {
-    if (!recordingInputInfo) return;
-    window.removeEventListener('keydown', handleKeydown, {capture: true});
-    recordingInputInfo.btn.textContent = "Record";
-    recordingInputInfo.btn.classList.remove("recording-active");
-    recordingInputInfo = null;
+  if (!recordingInputInfo) return;
+  window.removeEventListener('keydown', handleKeydown, { capture: true });
+  recordingInputInfo.btn.textContent = 'Record';
+  recordingInputInfo.btn.classList.remove('recording-active');
+  recordingInputInfo = null;
 }
 </script>
 
@@ -841,7 +833,7 @@ def clear_history():
         for f in os.listdir(audio_dir):
             try:
                 os.remove(os.path.join(audio_dir, f))
-            except Exception as e:
+            except Exception:
                 pass
     return redirect(url_for("index"))
 

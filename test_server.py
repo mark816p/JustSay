@@ -1,5 +1,4 @@
 import pytest
-import sqlite3
 import database
 from server import app
 
