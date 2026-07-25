@@ -4,11 +4,13 @@ from unittest.mock import patch
 pytest.importorskip("pyaudio")
 from audio_recorder import AudioRecorder  # noqa: E402
 
+
 def test_audio_recorder_init():
     recorder = AudioRecorder(chunk=512, rate=16000)
     assert recorder.chunk == 512
     assert recorder.rate == 16000
     assert recorder.is_recording is False
+
 
 @patch('audio_recorder.pyaudio.PyAudio')
 def test_audio_recorder_save(mock_pyaudio, tmp_path):

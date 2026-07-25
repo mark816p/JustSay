@@ -2,6 +2,7 @@ import os
 import sqlite3
 import database
 
+
 def test_database_init(tmp_path):
     db_file = tmp_path / "test_data.db"
     database.DB_PATH = str(db_file)
@@ -17,6 +18,7 @@ def test_database_init(tmp_path):
     assert {"history", "prompts", "users", "dictionary"}.issubset(tables)
     conn.close()
 
+
 def test_dictionary_operations(tmp_path):
     db_file = tmp_path / "test_data.db"
     database.DB_PATH = str(db_file)
@@ -30,6 +32,7 @@ def test_dictionary_operations(tmp_path):
     database.add_to_dictionary("Wispr")
     words = database.get_dictionary()
     assert words.count("Wispr") == 1
+
 
 def test_history_operations(tmp_path):
     db_file = tmp_path / "test_data.db"
