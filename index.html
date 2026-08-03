@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JustSay | Fully-Local AI Voice Assistant</title>
+  <meta name="description" content="Your 100% offline, privacy-first AI voice assistant powered by OpenAI Whisper." />
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            appBg: '#09090b',
+            appSurface: 'rgba(24, 24, 27, 0.7)',
+            appBorder: 'rgba(255,255,255,0.08)',
+            appAccent: '#3b82f6',
+            appAccentHover: '#2563eb',
+            appPurple: '#8b5cf6',
+            appGreen: '#22c55e',
+          },
+          backgroundImage: {
+            'gradient-primary': 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+            'gradient-mesh': 'radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 40%), radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 40%)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #09090b;
+      color: #fafafa;
+      overflow-x: hidden;
+    }
+
+    /* Dot-grid texture */
+    .bg-dots {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+
+    /* Liquid Glass Cards */
+    .glass-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-card:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.15);
+      transform: translateY(-4px);
+    }
+
+    /* Colored Top Accent on Cards */
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    
+    .glass-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Orb Animation */
+    .hero-orb {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 40px rgba(59, 130, 246, 0.4), 0 0 0 12px rgba(59, 130, 246, 0.1);
+      animation: orbPulse 4s ease-in-out infinite alternate;
+      margin: 0 auto;
+    }
+
+    @keyframes orbPulse {
+      0% {
+        box-shadow: 0 12px 40px rgba(59, 130, 246, 0.4), 0 0 0 12px rgba(59, 130, 246, 0.1);
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        box-shadow: 0 12px 60px rgba(139, 92, 246, 0.6), 0 0 0 20px rgba(139, 92, 246, 0.15);
+        transform: translateY(-10px) scale(1.05);
+      }
+    }
+
+    /* Spotlight effect inside cards */
+    .spotlight {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(59, 130, 246, 0.15) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1;
+    }
+    .glass-card:hover .spotlight {
+      opacity: 1;
+    }
+
+    .btn-glow {
+      position: relative;
+    }
+    .btn-glow::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6, #22c55e);
+      border-radius: 9999px;
+      z-index: -1;
+      filter: blur(12px);
+      opacity: 0.5;
+      transition: opacity 0.3s;
+    }
+    .btn-glow:hover::after {
+      opacity: 0.8;
+      animation: gradientSpin 3s linear infinite;
+    }
+    
+    @keyframes gradientSpin {
+      0% { filter: hue-rotate(0deg) blur(12px); }
+      100% { filter: hue-rotate(360deg) blur(12px); }
+    }
+  </style>
+</head>
+<body class="relative min-h-screen">
+  
+  <div class="bg-dots"></div>
+  <div class="fixed inset-0 z-[-1] bg-gradient-mesh"></div>
+
+  <!-- Header -->
+  <header class="fixed top-0 w-full z-50 bg-appBg/80 backdrop-blur-xl border-b border-appBorder">
+    <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white shadow-lg shadow-appAccent/30">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-5 h-5">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/>
+          </svg>
+        </div>
+        <span class="text-xl font-bold tracking-tight text-white">JustSay</span>
+      </div>
+      <nav>
+        <a href="https://github.com/mark816p/JustSay/releases/latest" class="text-sm font-semibold bg-white/10 hover:bg-white/20 px-5 py-2.5 rounded-full transition-colors border border-white/10">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="pt-40 pb-20 px-6 max-w-6xl mx-auto text-center">
+    <div class="hero-orb mb-12 text-white">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-12 h-12">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+        <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/>
+      </svg>
+    </div>
+    
+    <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+      Your Fully-Local <br/>
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">AI Voice Assistant</span>
+    </h1>
+    
+    <p class="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+      No cloud. No subscriptions. No data leaving your machine. Powered by OpenAI Whisper, completely offline and hyper-fast.
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+      <div class="btn-glow">
+        <a href="https://github.com/mark816p/JustSay/releases/latest" class="block bg-gradient-primary text-white font-bold text-lg px-10 py-4 rounded-full shadow-2xl transition-transform hover:scale-105">
+          Download Installer
+        </a>
+      </div>
+      <a href="https://github.com/mark816p/JustSay" target="_blank" class="flex items-center gap-2 font-medium text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 rounded-full transition-all">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        View on GitHub
+      </a>
+    </div>
+  </main>
+
+  <!-- Showcase Section -->
+  <section class="max-w-6xl mx-auto px-6 py-12">
+    <div class="glass-card p-2 md:p-4 w-full aspect-video rounded-3xl mx-auto relative group">
+      <div class="absolute inset-0 bg-gradient-primary opacity-20 blur-3xl rounded-full z-0 group-hover:opacity-40 transition-opacity duration-700"></div>
+      <img src="settings.png" alt="JustSay Dashboard Settings" class="w-full h-full object-cover rounded-2xl border border-white/10 relative z-10 shadow-2xl" onerror="this.src='https://placehold.co/1200x800/18181b/ffffff?text=JustSay+Dashboard'">
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="max-w-6xl mx-auto px-6 py-24">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl font-bold tracking-tight mb-4">Engineered for Flow</h2>
+      <p class="text-zinc-400">Everything you need to dictate seamlessly across your operating system.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8" id="features">
+      
+      <!-- Feature 1 -->
+      <div class="glass-card p-10 feature-card">
+        <div class="spotlight"></div>
+        <div class="w-14 h-14 bg-blue-500/10 text-blue-400 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/20">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-7 h-7"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-3">100% Offline & Private</h3>
+        <p class="text-zinc-400 leading-relaxed">
+          No internet required. Audio is processed entirely on your machine and discarded instantly. Your voice, your privacy.
+        </p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="glass-card p-10 feature-card">
+        <div class="spotlight"></div>
+        <div class="w-14 h-14 bg-purple-500/10 text-purple-400 rounded-2xl flex items-center justify-center mb-6 border border-purple-500/20">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-7 h-7"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-3">Global Hotkeys</h3>
+        <p class="text-zinc-400 leading-relaxed">
+          Trigger dictation anywhere. Use <strong>Push-to-Talk</strong> for short bursts or <strong>Toggle Mode</strong> for longer streams of thought.
+        </p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="glass-card p-10 feature-card">
+        <div class="spotlight"></div>
+        <div class="w-14 h-14 bg-green-500/10 text-green-400 rounded-2xl flex items-center justify-center mb-6 border border-green-500/20">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-7 h-7"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-3">Smart Output Styles</h3>
+        <p class="text-zinc-400 leading-relaxed">
+          Format your speech dynamically. Choose between <strong>Casual</strong>, <strong>Formal</strong>, <strong>Code</strong>, and <strong>Concise</strong> to match your workflow.
+        </p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="glass-card p-10 feature-card">
+        <div class="spotlight"></div>
+        <div class="w-14 h-14 bg-orange-500/10 text-orange-400 rounded-2xl flex items-center justify-center mb-6 border border-orange-500/20">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-7 h-7"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-3">Custom Vocabulary</h3>
+        <p class="text-zinc-400 leading-relaxed">
+          Teach the AI your jargon. Add names, project terms, and acronyms to instantly boost transcription accuracy.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-appBorder mt-12 py-12 text-center text-zinc-500 text-sm">
+    <p>Built with precision and privacy.</p>
+    <div class="mt-4 flex justify-center gap-4">
+      <a href="https://github.com/mark816p/JustSay" class="hover:text-white transition-colors">GitHub</a>
+      <span>&middot;</span>
+      <a href="https://github.com/mark816p/JustSay/releases/latest" class="hover:text-white transition-colors">Releases</a>
+    </div>
+  </footer>
+
+  <script>
+    // Spotlight Effect logic
+    document.querySelectorAll('.feature-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--x', `${x}px`);
+        card.style.setProperty('--y', `${y}px`);
+      });
+    });
+  </script>
+</body>
+</html>
